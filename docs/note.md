@@ -230,45 +230,49 @@ in space.
 ## Part 2. Experiment
 
 The design, hypotheses and decision rules were committed before any run in
-[`preregistration.md`](preregistration.md) (commit `9bf63af`). Departures are
-listed there as dated amendments and in §2.6.
+[`preregistration.md`](preregistration.md) (commit `9bf63af`). Two dated
+amendments followed, both before the main grid. They changed the task
+formulation, the training protocol and the families. They did not change the
+hypotheses or the decision rules. §2.6 explains why each change was needed.
 
 ### 2.1 Task families and why these
 
-Every task is causal. The target at position n depends on exactly the first
-n input tokens, so **n is the problem size**. One pass over a 256-token
-sequence therefore measures accuracy at every n ≤ 256. The rule is the same
-at every n; only the amount of serial computation grows.
+Every task is causal, and its targets are indexed by a problem size n that
+fixes how much serial computation the target needs. The rule never changes.
+One evaluation pass measures accuracy at every n at once.
 
-- **`s5`: iterated permutation composition.** The input is n uniform
-  permutations of five elements; the target is their running composition
-  p_n = g_n ∘ p_(n−1), one of 120 classes.
-  - *Why:* it is the canonical NC1-complete word problem (Barrington 1989).
-    Fixed-depth log-precision transformers lie in TC0, so unless TC0 = NC1 no
-    fixed depth solves all n. Log2 n passes of one looped layer suffice in
-    principle (Saunshi et al. 2025, Thm 5.1). The task therefore separates a
-    *parallel* solution (depth about log n) from a *sequential* one (depth
-    about n), and both show up as different shapes of n\*(T).
-- **`ca110`: rule-110 rollout.** The input is n random bits; the target is the
-  value of cell 0 after n−1 steps of rule 110, with an all-zero background to
-  the left.
-  - *Why:* predicting rule 110 is P-complete (Neary & Woods 2006) and rule 110
-    is universal (Cook 2004). Unless NC = P, no polylog-depth shortcut exists,
-    and the only known general algorithm is n−1 sequential local updates.
-  - Its rule table has 8 entries, so the description length is tiny while the
-    required computation grows linearly. This is exactly the regime of
-    Theorem B, and the hand-built 84-weight ternary block solves it.
-- **`mod7`: running sum mod 7.** This is the contrast family.
-  - The group is abelian, hence solvable, so in principle constant depth
-    suffices (Liu et al. 2023). The catch is that the constant-depth
-    construction needs width or precision that grows with n.
-  - It is the case where serial depth is *not* strictly required. It runs on
-    a reduced grid.
+- **`ca110d`: rule-110 rollout.** The input is a row of random bits with an
+  all-zero background on the left.
+  - At every position s the model outputs 32 binary heads. Head k is the cell
+    c(s−1−k, k) of the spacetime diagram, that is, the value k rule-110 steps
+    later on the diagonal through (s−1, 0).
+  - Problem size n = k + 1: head k needs k rule applications.
+  - *Why:* predicting rule 110 is P-complete (Neary & Woods 2006) and rule
+    110 is universal (Cook 2004). Unless NC = P, no polylog-depth shortcut
+    exists, so the required serial depth grows with n.
+  - The rule table has 8 entries, so description length is tiny while
+    computation grows linearly. This is the regime of Theorem B.
+  - The hand-built block in `construct.py` solves the single-column version
+    of this task with 84 ternary weights. The diagonal version would need 32
+    more channels: a shift register and latches. That extension is
+    straightforward but not implemented.
+- **`mod7`: running sum mod 7.** The target at position n is
+  (a_1 + … + a_n) mod 7.
+  - This is the word problem of an abelian group. Constant depth suffices in
+    principle, but the width needed then grows with n (Liu et al. 2023).
+  - The natural learned algorithm is a scan, n − 1 steps sequentially or
+    about log2 n with doubling. Unlike `ca110d`, its scan state *is* the
+    target.
+  - The S5 construction in `construct.py` carries over to any finite group:
+    replace the permutation matrices with the group's regular
+    representation.
+- **`s5` (exploratory only): iterated permutation composition.** This is the
+  canonical NC1-complete word problem (Barrington 1989), and theory makes it
+  the most attractive family. No model learned it at this scale (§2.6), so
+  it was moved out of the main grid. Only a small d = 64 check remains.
 - **Rejected:**
-  - binary addition: carry-lookahead puts it in AC0, a constant-depth
-    shortcut;
-  - parity: the same group structure as `mod7`, but notoriously hard to
-    optimize, which would confound the test;
+  - binary addition: AC0, so carry-lookahead gives a constant-depth shortcut;
+  - parity: hard to optimize, which would confound the test;
   - sorting: TC0.
 
 ### 2.2 Arms
@@ -282,41 +286,61 @@ including the embedding and the readout.
 | arm | weights | compute per token | depth |
 |---|---|---|---|
 | **TIED(d, T)** | one block of width d: W | W·T | T passes |
-| **UNTIED-W(d, T)** | T blocks, narrowed to the same total W (within 2%) | W | T layers |
+| **UNTIED-W(d, T)** | T blocks, narrowed so the total W matches within 2% | W | T layers |
 | **UNTIED-C(d, T)** | T blocks of width d: about W·T | W·T | T layers |
 
-UNTIED-W is the comparison the brief asks for: the same total parameter count.
-UNTIED-C matches compute instead. It tests directly whether a tied model at
-(W, T) behaves like an untied model with W·T parameters, which is what
-"parameters × passes" would mean.
+- **UNTIED-W** is the comparison the brief asks for: the same total parameter
+  count.
+- **UNTIED-C** matches compute instead. It tests whether a tied model at
+  (W, T) behaves like an untied model with W·T parameters, which is what
+  "parameters × passes" would mean.
+
+W for TIED: 13,408 (d = 32) and 51,392 (d = 64) on `ca110d`; 12,768 and
+50,112 on `mod7`.
 
 ### 2.3 Precision
 
-Weights are fake-quantized during training, with a straight-through
-estimator, to one of three formats:
+Weights are fake-quantized with a straight-through estimator:
 
-- float: bf16 in the matmuls;
+- float: bf16 in the matmuls, counted as b = 16;
 - int4: 15 levels, per-tensor absmax scale;
 - ternary: 3 levels, per-tensor absmean scale, as in BitNet b1.58.
 
-The quantized models store W·b bits plus one fp32 scale per weight tensor.
-Activations are not quantized: claim A is about weight bits, and Theorem A
-holds whatever the activation precision.
+Every model trains in float for the first half of its steps; then its own
+quantizer switches on for the second half. The precision axis therefore asks
+whether a b-bit network can *hold* a solution of the task. It does not ask
+whether straight-through training can bootstrap one from nothing, which
+failed in the pilot (§2.6).
 
-### 2.4 Measurement
+Activations are not quantized: claim A concerns weight bits, and Theorem A
+holds at any activation precision. Between the extreme cells, d = 64 float
+and d = 32 ternary, W·b differs by 39× on `ca110d` and 40× on `mod7`. Even
+the smallest budget, about 20 kbit, is two orders of magnitude above what the
+hand-built blocks need.
 
-acc(n) is exact-match accuracy at position n over 2,048 held-out sequences,
-the same sequences for every run.
+### 2.4 Training and measurement
 
-**n\*\_θ = max{n : acc(m) ≥ θ for all m ≤ n}**, with θ = 0.9. The values
-θ = 0.8 and 0.99 are kept as sensitivity checks. The value 256 is censored
-("solves every position").
+**Training.**
 
-Each job trains 6 models in one process: 3 bit-widths × 2 seeds. They share
-an architecture and step budget but have independent initializations and
-independent data streams. Data is generated fresh every step, so no example
-repeats and there is no overfitting regime. The cell value is the median over
-seeds. Tied models are also evaluated at T_test ∈ {1, 2, 4, …, 128}.
+- Each job trains 6 models in one process: 3 bit-widths × 2 seeds. They
+  share an architecture and step budget, but each has its own
+  initialization and its own data stream.
+- Data is fresh every step, so there is no overfitting regime.
+- Optimizer: AdamW at lr 3e-3 with cosine decay, batch 32 per model, 6,000
+  steps.
+- The loss is ½ × (cross-entropy at the final depth) + ½ × (mean
+  cross-entropy over earlier depths).
+- A curriculum limits the loss to sizes up to a horizon H. H grows to
+  n\*\_probe + 8, measured every 100 steps on a separate probe set. The rule
+  is identical for every arm.
+
+**Measurement.** acc(n) is accuracy at problem size n on 2,048 held-out
+sequences, the same for every run.
+
+**n\*\_θ = max{n : acc(m) ≥ θ for all m ≤ n}**, with θ = 0.9. θ = 0.8 and
+0.99 are kept as sensitivity checks. Censoring is at 32 for `ca110d` and 128
+for `mod7`. The cell value is the median over the 2 seeds. Tied models are
+also evaluated at T_test ∈ {1, 2, 4, …, 128}.
 
 ### 2.5 Hypotheses and decision rules
 
@@ -326,16 +350,16 @@ The hypotheses come from the brief and were stated before any run:
   by training rather than by W·b.
 - **H_ceiling:** solvable n levels off at a level that tracks W·b.
 
-The operational rules (pre-registered):
+The rules are pre-registered and apply per family to the 6 (d, b) cells of
+TIED, with T_test = T_train:
 
-- A (d, b) cell **grows** if n\*(32) ≥ 1.2·n\*(16), or if n\*(32) is
-  censored.
-- A cell **saturates** if n\*(32) < 1.1·n\*(16) and n\*(32) < 1.2·n\*(8).
+- A cell **grows** if n\*(32) ≥ 1.2·n\*(16), or if n\*(32) is censored.
+- A cell **saturates** if n\*(32) < 1.1·n\*(16), n\*(32) < 1.2·n\*(8), and
+  n\*(32) is not censored.
 - A family is **Wb-insensitive** if n\*(d=32, ternary) ≥ 0.75·n\*(d=64,
-  float). These two cells differ in W·b by about 30× on s5 and about 40× on
-  ca110.
-- A family is **Wb-tracking** if Spearman ρ(log Wb, n\*) ≥ 0.6 and the
-  high-Wb cell reaches at least 2× the low-Wb cell.
+  float).
+- A family is **Wb-tracking** if Spearman ρ(log Wb, n\*(32)) ≥ 0.6 and
+  n\*(d=64, float) ≥ 2·n\*(d=32, ternary).
 
 The verdict for each family:
 
@@ -344,5 +368,39 @@ The verdict for each family:
 - **H_ceiling** if at least 4 of 6 cells saturate and the family is
   Wb-tracking;
 - **mixed** otherwise.
+
+### 2.6 What the pilots showed (before the main grid)
+
+All pilots used TIED, d = 32, T = 8, one seed.
+
+1. **Rule 110 asked as one output per position is not learnable at this
+   budget.** The first formulation asked, at position n, only for cell 0
+   after n−1 steps.
+   - After 3,000 steps n\* was 6, and n\*(T_test = 4) = n\*(T_test = 8).
+   - The model had memorized lookup tables over the first few inputs and
+     found no iteration.
+   - The interior cells of the spacetime diagram are never targets in that
+     formulation, so credit assignment has to run through every pass.
+
+   This is structural. If every intermediate state of a computation were the
+   target of a left-to-right finite-state scan, the computation would be in
+   NC1. A P-complete prediction task posed with one output per position
+   therefore *must* hide its intermediate state.
+
+   The diagonal formulation exposes the intermediate cells as targets
+   without dictating the algorithm. With it, the float model reached
+   n\* = 9 at T = 8: one rule step per pass, exactly the sequential maximum.
+2. **Permutation composition was not learned at all.** n\* stayed at 0–1
+   with or without the curriculum, at lr 1e-3 or 3e-3. Even the trivial
+   position-1 copy stayed at 12–39% without the curriculum. This is
+   reported as a learnability limit at d = 32 and 3,000 steps. It is not
+   evidence about W·b: by Theorem B a ternary block of about 23k weights
+   represents the scan exactly.
+3. **Ternary weights trained from scratch stalled** at n\* = 2 on `ca110d`.
+   Starting from float improved this to n\* = 5 on `ca110d`, but not on
+   `mod7` (n\* = 2). Per-channel scales did not help.
+
+These pilots are where most of the time went. They are also the clearest
+evidence on how wide the representation-versus-learning gap is (§3).
 
 <!-- RESULTS -->

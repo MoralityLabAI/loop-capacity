@@ -19,7 +19,7 @@ its weight bits W·b?
 
 | path | what |
 |---|---|
-| `loopcap/tasks.py` | three causal task families: `s5` (permutation composition), `ca110` (rule-110 rollout), `mod7` (running sum) |
+| `loopcap/tasks.py` | causal task families: `ca110d` (rule-110 spacetime diagonal, 32 heads), `mod7` (running sum mod 7), `s5` (permutation composition, exploratory), and the original `ca110` (single column, unlearnable in the pilot) |
 | `loopcap/model.py` | M independent small transformers trained in one process. Their weights are stacked on a model axis. Arms: tied, untied with matched W, untied with matched compute |
 | `loopcap/quant.py` | per-model weight fake-quantization: float, int4 or ternary, with a straight-through estimator |
 | `loopcap/train.py` | trains one job (bit-widths × seeds) and evaluates per-position accuracy at several pass counts |
@@ -40,13 +40,13 @@ python -m pytest
 Train one job: the tied model, d = 32, 8 passes, three bit-widths × two seeds.
 
 ```bash
-python -m loopcap.train --task ca110 --arm tied --d 32 --T 8 --bits 32 4 1.58 --seeds 1 2 --steps 4000 --batch 32 --out results/runs/ca110_tied_d32_T8.json
+python -m loopcap.train --task ca110d --arm tied --d 32 --T 8 --bits 32 4 1.58 --seeds 1 2 --steps 6000 --lr 0.003 --seq 64 --quant-start 0.5 --out results/runs/ca110d_tied_d32_T8.json
 ```
 
 Run the full grid. It skips finished jobs.
 
 ```bash
-python -u scripts/run_grid.py --steps 4000 --batch 32 --lr 1e-3
+python -u scripts/run_grid.py --steps 6000 --lr 0.003 --quant-start 0.5 --long 3
 ```
 
 Then build the tables and figures.
@@ -55,6 +55,13 @@ Then build the tables and figures.
 python scripts/analyze.py
 ```
 
-The authoritative step budget, learning rate and batch size are the ones in
-the preregistration amendments. On a shared RTX 5080 Laptop GPU, the heaviest
-job (s5, d = 64, T = 32, 6 models) takes about 1 s per step.
+The authoritative settings are the ones in the preregistration amendments:
+lr 3e-3, batch 32, 6,000 steps, half float then quantized, and the
+problem-size curriculum.
+
+On a shared RTX 5080 Laptop GPU with CUDA-graph capture:
+- ca110d, d = 32, T = 32, 6 models: about 0.22 s per step;
+- s5, d = 64, T = 32: about 0.5 s per step.
+
+Several `run_grid.py` workers can share the queue; they claim jobs with lock
+files.
