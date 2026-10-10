@@ -44,7 +44,7 @@ class ArchSpec:
     def param_count(self) -> int:
         spec = TASKS[self.task]
         per_block = 4 * self.d * self.d + 2 * self.d * self.hidden
-        return spec.vocab * self.d + self.n_blocks * per_block + self.d * spec.classes
+        return spec.vocab * self.d + self.n_blocks * per_block + self.d * spec.outputs
 
     def tensor_count(self) -> int:
         return 2 + 4 * self.n_blocks
@@ -76,7 +76,7 @@ def untied_matched_arch(task: str, d: int, passes: int, tol: float = 0.02) -> Ar
     best = None
     for min_ratio in (2.0, 1.0, 0.5):
         for dp in range(d, head_dim - 1, -head_dim):
-            rest = target - (spec.vocab + spec.classes) * dp - passes * 4 * dp * dp
+            rest = target - (spec.vocab + spec.outputs) * dp - passes * 4 * dp * dp
             if rest <= 0:
                 continue
             hp = round(rest / (2 * passes * dp))
@@ -167,7 +167,8 @@ class ModelStack(nn.Module):
             self.wo.append(init((d, d), d ** -0.5 * out_scale))
             self.w1.append(init((d, h), d ** -0.5))
             self.w2.append(init((h, d), h ** -0.5 * out_scale))
-        self.readout = init((d, spec.classes), d ** -0.5)
+        self.readout = init((d, spec.outputs), d ** -0.5)
+        self.multilabel = bool(spec.heads)
         self.quant = Quantizer(bits, device)
         self._rope = {}
 
@@ -191,21 +192,28 @@ class ModelStack(nn.Module):
     def block_index(self, t: int) -> int:
         return 0 if self.arch.n_blocks == 1 else t
 
-    def train_loss(self, x: torch.Tensor, y: torch.Tensor, use_checkpoint: bool = True) -> torch.Tensor:
-        """Per-model loss [M]: 0.5*CE(final) + 0.5*mean CE over earlier depths."""
+    def train_loss(self, x: torch.Tensor, y: torch.Tensor, use_checkpoint: bool = True,
+                   final_weight: float = 0.5) -> torch.Tensor:
+        """Per-model loss [M]: w*CE(final) + (1-w)*mean CE over earlier depths."""
         arch = self.arch
         emb_q, blocks, ro_q = self.quantized()
         e = self.embed(emb_q, x)
         cos, sin = self.rope(x.shape[-1], x.device)
         m, b, s, _ = e.shape
         classes = ro_q.shape[-1]
+        multilabel = self.multilabel
+        yf = y.float() if multilabel else None
         T = arch.passes
-        weights = [1.0] if T == 1 else [0.5 / (T - 1)] * (T - 1) + [0.5]
+        w = final_weight
+        weights = [1.0] if T == 1 else [(1 - w) / (T - 1)] * (T - 1) + [w]
 
         def step(h, wqkv, wo, w1, w2):
             hn = block_forward(h + e, wqkv, wo, w1, w2, arch.heads, cos, sin)
             logits = bmm(rms_norm(hn[:, :, 1:]), ro_q)
-            ce = F.cross_entropy(logits.reshape(-1, classes), y.reshape(-1), reduction="none")
+            if multilabel:
+                ce = F.binary_cross_entropy_with_logits(logits.float(), yf, reduction="none")
+            else:
+                ce = F.cross_entropy(logits.reshape(-1, classes), y.reshape(-1), reduction="none")
             return hn, ce.view(m, -1).mean(1)
 
         h = torch.zeros_like(e)
@@ -216,14 +224,17 @@ class ModelStack(nn.Module):
                 h, ce = checkpoint(step, h, *blk, use_reentrant=False)
             else:
                 h, ce = step(h, *blk)
-            total = total + weights[t] * ce
+            if weights[t]:
+                total = total + weights[t] * ce
         return total
 
     @torch.no_grad()
     def correct_by_position(self, x: torch.Tensor, y: torch.Tensor, record: list[int]) -> dict[int, torch.Tensor]:
-        """Number of correct predictions per position, [M, N], after each pass
-        count in `record`. Tied models may run past their training depth;
-        untied models only up to their number of blocks."""
+        """Correct predictions per problem size after each pass count in
+        `record`: [M, N] summed over sequences (problem size = position), or
+        for multi-label tasks [M, heads] summed over sequences and positions
+        (problem size = head index). Tied models may run past their training
+        depth; untied models only up to their number of blocks."""
         arch = self.arch
         emb_q, blocks, ro_q = self.quantized()
         e = self.embed(emb_q, x)
@@ -237,6 +248,9 @@ class ModelStack(nn.Module):
             blk = blocks[self.block_index(t)]
             h = block_forward(h + e, *blk, arch.heads, cos, sin)
             if (t + 1) in record:
-                pred = bmm(rms_norm(h[:, :, 1:]), ro_q).argmax(-1)
-                out[t + 1] = (pred == y).sum(1)
+                logits = bmm(rms_norm(h[:, :, 1:]), ro_q)
+                if self.multilabel:
+                    out[t + 1] = ((logits > 0).long() == y).sum((1, 2))
+                else:
+                    out[t + 1] = (logits.argmax(-1) == y).sum(1)
         return out

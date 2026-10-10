@@ -1,7 +1,13 @@
 """Train one job: M models (bit-widths x seeds) of one architecture on one task.
 
-    python -m loopcap.train --task ca110 --arm tied --d 32 --T 8 \
-        --bits 32 4 1.58 --seeds 1 2 --steps 6000 --out results/runs/x.json
+    python -m loopcap.train --task ca110d --arm tied --d 32 --T 8 \
+        --bits 32 4 1.58 --seeds 1 2 --steps 4000 --out results/runs/x.json
+
+On CUDA the whole training step (forward, backward, per-model clipping,
+AdamW) is captured once as a CUDA graph and replayed. On a GPU shared with
+other jobs, per-kernel launch latency, not arithmetic, limits these tiny
+models, so this matters more than anything else for speed. Training data is
+generated in chunks of many steps for the same reason.
 """
 
 from __future__ import annotations
@@ -22,18 +28,17 @@ from .quant import weight_bits
 from .tasks import TASKS, eval_set, sample
 
 ARMS = {"tied": tied_arch, "untied_w": untied_matched_arch, "untied_c": untied_compute_arch}
-SEQ = 256
 
 
 def make_arch(task: str, arm: str, d: int, T: int):
     return ARMS[arm](task, d, T)
 
 
-def lower_priority() -> None:
+def set_priority(low: bool) -> None:
     if os.name == "nt":
         import ctypes
-        BELOW_NORMAL = 0x4000
-        ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), BELOW_NORMAL)
+        cls = 0x4000 if low else 0x20  # BELOW_NORMAL / NORMAL
+        ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), cls)
 
 
 def lr_at(step: int, total: int, peak: float, warmup: int) -> float:
@@ -58,18 +63,41 @@ def clip_per_model(params, m: int, max_norm: float) -> torch.Tensor:
     return norm
 
 
-def evaluate(model: ModelStack, x_eval, y_eval, record: list[int], chunk: int) -> dict[int, torch.Tensor]:
-    """Per-position accuracy [M, N] after each pass count in `record`."""
+class DataStream:
+    """Fresh training data, generated `chunk` steps at a time."""
+
+    def __init__(self, task, m, batch, seq, gen, device, chunk):
+        self.args = (task, m, batch, seq, gen, device)
+        self.chunk = chunk
+        self.i = chunk
+        self.x = self.y = None
+
+    def next(self):
+        task, m, batch, seq, gen, device = self.args
+        if self.i >= self.chunk:
+            x, y = sample(task, (self.chunk * m, batch), seq, gen, device)
+            self.x = x.view(self.chunk, m, batch, *x.shape[2:])
+            self.y = y.view(self.chunk, m, batch, *y.shape[2:])
+            self.i = 0
+        self.i += 1
+        return self.x[self.i - 1], self.y[self.i - 1]
+
+
+def evaluate(model: ModelStack, x_eval, y_eval, record: list[int], chunk: int,
+             amp: bool = False) -> dict[int, torch.Tensor]:
+    """Accuracy per problem size [M, sizes] after each pass count in `record`."""
     m = model.m
     totals: dict[int, torch.Tensor] = {}
     count = x_eval.shape[0]
+    denom = count * (y_eval.shape[1] if model.multilabel else 1)
     for i in range(0, count, chunk):
-        xb = x_eval[i:i + chunk].unsqueeze(0).expand(m, -1, -1)
-        yb = y_eval[i:i + chunk].unsqueeze(0).expand(m, -1, -1)
-        got = model.correct_by_position(xb, yb, record)
+        xb = x_eval[i:i + chunk].unsqueeze(0).expand(m, *([-1] * x_eval.dim()))
+        yb = y_eval[i:i + chunk].unsqueeze(0).expand(m, *([-1] * y_eval.dim()))
+        with torch.autocast(xb.device.type, dtype=torch.bfloat16, enabled=amp):
+            got = model.correct_by_position(xb, yb, record)
         for t, c in got.items():
             totals[t] = totals.get(t, 0) + c.double()
-    return {t: (c / count).cpu() for t, c in totals.items()}
+    return {t: (c / denom).cpu() for t, c in totals.items()}
 
 
 def test_passes(arm: str, T: int, max_test: int) -> list[int]:
@@ -86,13 +114,16 @@ def test_passes(arm: str, T: int, max_test: int) -> list[int]:
 
 def run(args) -> dict:
     device = torch.device(args.device)
+    if device.type == "cuda" and device.index is None:
+        device = torch.device("cuda", 0)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
     torch.set_num_threads(args.threads)
-    lower_priority()
+    set_priority(args.low_priority)
     if device.type == "cuda" and args.vram_gb:
         total = torch.cuda.get_device_properties(device).total_memory / 2 ** 30
         torch.cuda.set_per_process_memory_fraction(min(0.95, args.vram_gb / total), device)
+    use_graph = args.graph and device.type == "cuda"
 
     arch = make_arch(args.task, args.arm, args.d, args.T)
     bits = [b for b in args.bits for _ in args.seeds]
@@ -100,11 +131,17 @@ def run(args) -> dict:
     model = ModelStack(arch, bits, seeds, device)
     m = model.m
     params = list(model.parameters())
-    opt = torch.optim.AdamW(params, lr=args.lr, betas=(0.9, 0.98), weight_decay=args.wd)
+    if use_graph:
+        lr_t = torch.tensor(args.lr, device=device)
+        opt = torch.optim.AdamW(params, lr=lr_t, betas=(0.9, 0.98), weight_decay=args.wd,
+                                capturable=True)
+    else:
+        opt = torch.optim.AdamW(params, lr=args.lr, betas=(0.9, 0.98), weight_decay=args.wd)
 
     gen = torch.Generator(device=device)
     gen.manual_seed(zlib.crc32(f"{args.task}|{args.arm}|{args.d}|{args.T}|{args.seeds}".encode()))
-    x_eval, y_eval = eval_set(args.task, args.eval_count, SEQ, device)
+    stream = DataStream(args.task, m, args.batch, args.seq, gen, device, args.data_chunk)
+    x_eval, y_eval = eval_set(args.task, args.eval_count, args.seq, device)
     quick = max(1, args.eval_count // 4)
 
     log_path = Path(args.out).with_suffix(".log.jsonl")
@@ -115,32 +152,68 @@ def run(args) -> dict:
         logf.write(json.dumps(rec) + "\n")
         logf.flush()
 
-    history = []
-    t0 = time.time()
-    log({"event": "start", "arch": arch.to_dict(), "bits": bits, "seeds": seeds, "args": vars(args)})
-    for step in range(args.steps):
-        lr = lr_at(step, args.steps, args.lr, args.warmup)
-        for g in opt.param_groups:
-            g["lr"] = lr
-        x, y = sample(args.task, (m, args.batch), SEQ, gen, device)
-        loss = model.train_loss(x, y)
-        opt.zero_grad(set_to_none=True)
+    x_s, y_s = (t.clone() for t in stream.next())
+
+    def train_step():
+        with torch.autocast(device.type, dtype=torch.bfloat16, enabled=args.amp, cache_enabled=False):
+            loss = model.train_loss(x_s, y_s, final_weight=args.final_weight)
         loss.sum().backward()
         gnorm = clip_per_model(params, m, args.clip)
         opt.step()
+        return loss.detach(), gnorm
+
+    def set_lr(step):
+        lr = lr_at(step, args.steps, args.lr, args.warmup)
+        if use_graph:
+            lr_t.fill_(lr)
+        else:
+            for g in opt.param_groups:
+                g["lr"] = lr
+        return lr
+
+    history = []
+    t0 = time.time()
+    log({"event": "start", "arch": arch.to_dict(), "bits": bits, "seeds": seeds, "args": vars(args)})
+    graph = None
+    loss = gnorm = None
+    warm = 3 if use_graph else 0
+    side = torch.cuda.Stream() if use_graph else None
+    for step in range(args.steps):
+        lr = set_lr(step)
+        if step > 0:
+            x, y = stream.next()
+            x_s.copy_(x)
+            y_s.copy_(y)
+        if not use_graph:
+            opt.zero_grad(set_to_none=True)
+            loss, gnorm = train_step()
+        elif step < warm:
+            # eager warm-up steps on a side stream, as the CUDA-graph recipe requires
+            side.wait_stream(torch.cuda.current_stream())
+            with torch.cuda.stream(side):
+                opt.zero_grad(set_to_none=True)
+                loss, gnorm = train_step()
+            torch.cuda.current_stream().wait_stream(side)
+        else:
+            if graph is None:
+                graph = torch.cuda.CUDAGraph()
+                opt.zero_grad(set_to_none=True)
+                with torch.cuda.graph(graph):
+                    loss, gnorm = train_step()
+            graph.replay()
         if (step + 1) % args.log_every == 0 or step == 0:
-            log({"event": "train", "step": step + 1, "lr": lr, "loss": loss.detach().cpu().tolist(),
+            log({"event": "train", "step": step + 1, "lr": lr, "loss": loss.cpu().tolist(),
                  "gnorm": gnorm.cpu().tolist(), "elapsed": time.time() - t0})
         if (step + 1) % args.eval_every == 0 or step + 1 == args.steps:
-            acc = evaluate(model, x_eval[:quick], y_eval[:quick], [arch.passes], args.eval_chunk)[arch.passes]
+            acc = evaluate(model, x_eval[:quick], y_eval[:quick], [arch.passes], args.eval_chunk,
+                           args.amp)[arch.passes]
             ns = [n_star(acc[i], 0.9) for i in range(m)]
-            history.append({"step": step + 1, "n_star_0.9": ns,
-                            "mean_acc": acc.mean(1).tolist()})
+            history.append({"step": step + 1, "n_star_0.9": ns, "mean_acc": acc.mean(1).tolist()})
             log({"event": "eval", **history[-1], "elapsed": time.time() - t0})
     train_seconds = time.time() - t0
 
     record = test_passes(args.arm, args.T, args.max_test_passes)
-    accs = evaluate(model, x_eval, y_eval, record, args.eval_chunk)
+    accs = evaluate(model, x_eval, y_eval, record, args.eval_chunk, args.amp)
     models = []
     for i in range(m):
         per_t = {}
@@ -153,7 +226,7 @@ def run(args) -> dict:
             "bits": bits[i], "seed": seeds[i], "params": W,
             "weight_bits": W * weight_bits(bits[i]),
             "scale_bits": 0 if bits[i] >= 32 else 32 * arch.tensor_count(),
-            "final_loss": float(loss[i].detach()),
+            "final_loss": float(loss[i]),
             "history": [{"step": h["step"], "n_star_0.9": h["n_star_0.9"][i],
                          "mean_acc": h["mean_acc"][i]} for h in history],
             "eval": per_t,
@@ -161,9 +234,11 @@ def run(args) -> dict:
     result = {
         "task": args.task, "arm": args.arm, "d": args.d, "T": args.T,
         "arch": arch.to_dict(), "steps": args.steps, "lr": args.lr, "batch": args.batch,
-        "train_seconds": train_seconds, "eval_count": args.eval_count, "seq": SEQ,
+        "train_seconds": train_seconds, "eval_count": args.eval_count, "seq": args.seq,
+        "amp": args.amp, "graph": use_graph, "final_weight": args.final_weight,
         "record": record, "models": models,
         "device": torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
+        "peak_mem_gb": (torch.cuda.max_memory_allocated(device) / 2 ** 30) if device.type == "cuda" else 0.0,
     }
     tmp = Path(args.out).with_suffix(".tmp")
     tmp.write_text(json.dumps(result), encoding="utf-8")
@@ -186,19 +261,28 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--T", type=int, required=True)
     p.add_argument("--bits", type=float, nargs="+", default=[32, 4, 1.58])
     p.add_argument("--seeds", type=int, nargs="+", default=[1, 2])
-    p.add_argument("--steps", type=int, default=6000)
+    p.add_argument("--steps", type=int, default=4000)
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--wd", type=float, default=0.01)
-    p.add_argument("--batch", type=int, default=64)
+    p.add_argument("--batch", type=int, default=32)
     p.add_argument("--warmup", type=int, default=200)
     p.add_argument("--clip", type=float, default=1.0)
+    p.add_argument("--final-weight", type=float, default=0.5,
+                   help="loss weight on the final depth; the rest is spread over earlier depths")
     p.add_argument("--eval-every", type=int, default=500)
     p.add_argument("--eval-count", type=int, default=2048)
     p.add_argument("--eval-chunk", type=int, default=256)
     p.add_argument("--max-test-passes", type=int, default=128)
     p.add_argument("--log-every", type=int, default=100)
-    p.add_argument("--threads", type=int, default=4)
+    p.add_argument("--data-chunk", type=int, default=50, help="training steps of data generated at once")
+    p.add_argument("--threads", type=int, default=2)
     p.add_argument("--vram-gb", type=float, default=0.0)
+    p.add_argument("--seq", type=int, default=256)
+    p.add_argument("--amp", action=argparse.BooleanOptionalAction, default=True,
+                   help="bf16 autocast for matmuls/attention; residual stream stays fp32")
+    p.add_argument("--graph", action=argparse.BooleanOptionalAction, default=True,
+                   help="capture the training step as a CUDA graph")
+    p.add_argument("--low-priority", action="store_true")
     p.add_argument("--device", default="cuda")
     p.add_argument("--out", required=True)
     p.add_argument("--ckpt", default="")

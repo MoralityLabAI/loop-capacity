@@ -63,7 +63,8 @@ def test_sample_shapes_and_bos():
     g.manual_seed(0)
     for task, spec in TASKS.items():
         x, y = sample(task, (2, 3), 16, g, torch.device("cpu"))
-        assert x.shape == (2, 3, 17) and y.shape == (2, 3, 16)
+        extra = (spec.heads,) if spec.heads else ()
+        assert x.shape == (2, 3, 17) and y.shape == (2, 3, 16, *extra)
         assert (x[..., 0] == spec.bos).all()
         assert int(y.max()) < spec.classes
 
@@ -72,3 +73,36 @@ def test_eval_set_is_fixed():
     a = eval_set("s5", 4, 8, torch.device("cpu"))
     b = eval_set("s5", 4, 8, torch.device("cpu"))
     assert torch.equal(a[0], b[0]) and torch.equal(a[1], b[1])
+
+
+def test_ca110_diagonal_matches_naive_spacetime():
+    from loopcap.tasks import ca110_diagonal_targets
+    rng = random.Random(3)
+    n, heads = 20, 12
+    x = [rng.randrange(2) for _ in range(n)]
+    lo, hi = -3 * n, 3 * n
+    rows = [{k: (x[k] if 0 <= k < n else 0) for k in range(lo, hi)}]
+    for _ in range(heads):
+        r = rows[-1]
+        new = {k: (110 >> (4 * r[k - 1] + 2 * r[k] + r[k + 1])) & 1 for k in range(lo + 1, hi - 1)}
+        new[lo], new[hi - 1] = 0, 0
+        rows.append(new)
+    got = ca110_diagonal_targets(torch.tensor([x]), heads)[0]
+    for s in range(1, n + 1):
+        for k in range(heads):
+            # the naive window has unknown cells beyond x_(n-1) set to 0; head k at
+            # position s only depends on cells <= s-1, so it must still agree
+            assert int(got[s - 1, k]) == rows[k][s - 1 - k]
+
+
+def test_ca110_diagonal_is_causal_and_extends_column():
+    from loopcap.tasks import ca110_diagonal_targets
+    rng = random.Random(4)
+    x = torch.tensor([[rng.randrange(2) for _ in range(40)]])
+    d = ca110_diagonal_targets(x, 16)
+    col = ca110_targets(x)
+    for s in range(1, 17):  # head s-1 at position s is cell 0 after s-1 steps
+        assert int(d[0, s - 1, s - 1]) == int(col[0, s - 1])
+    y = x.clone()
+    y[0, 25:] = 1 - y[0, 25:]
+    assert torch.equal(ca110_diagonal_targets(y, 16)[0, :25], d[0, :25])

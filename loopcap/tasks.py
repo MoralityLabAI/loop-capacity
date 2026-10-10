@@ -39,15 +39,24 @@ class TaskSpec:
     name: str
     vocab: int  # input vocabulary including BOS (BOS = vocab - 1)
     classes: int
+    heads: int = 0  # >0: multi-label task with this many binary heads per position
 
     @property
     def bos(self) -> int:
         return self.vocab - 1
 
+    @property
+    def outputs(self) -> int:
+        """Width of the readout layer."""
+        return self.heads if self.heads else self.classes
+
+
+CA_HEADS = 32
 
 TASKS = {
     "s5": TaskSpec("s5", vocab=121, classes=120),
     "ca110": TaskSpec("ca110", vocab=3, classes=2),
+    "ca110d": TaskSpec("ca110d", vocab=3, classes=2, heads=CA_HEADS),
     "mod7": TaskSpec("mod7", vocab=8, classes=7),
 }
 
@@ -102,6 +111,29 @@ def ca110_targets(x: torch.Tensor) -> torch.Tensor:
     return out.reshape(x.shape)
 
 
+def ca110_diagonal_targets(x: torch.Tensor, heads: int = CA_HEADS) -> torch.Tensor:
+    """targets[..., s-1, k] = c(s-1-k, k) for k < heads: at every position, the
+    spacetime diagonal through (s-1, 0). Head k needs k rule applications and
+    depends only on x_0..x_(s-1) (zero background on the left).
+
+    The simulation covers spatial cells [-2*heads, N-1]. The zero padding on
+    the left is exact (the background is zero and its infected region is
+    inside the window). The right padding is wrong, but its error front
+    moves left one cell per step, so at time k it has reached cells
+    >= N-1-k+1 and never the needed cells <= N-1-k.
+    """
+    flat = x.reshape(-1, x.shape[-1]).long()
+    n = flat.shape[1]
+    left = 2 * heads
+    row = torch.cat([torch.zeros(flat.shape[0], left, dtype=torch.long, device=x.device), flat], dim=1)
+    out = torch.empty(flat.shape[0], n, heads, dtype=torch.long, device=x.device)
+    for k in range(heads):
+        out[:, :, k] = row[:, left - k:left - k + n]
+        if k + 1 < heads:
+            row = rule110_step(row)
+    return out.reshape(*x.shape, heads)
+
+
 def mod7_targets(a: torch.Tensor) -> torch.Tensor:
     return torch.cumsum(a, dim=-1) % 7
 
@@ -116,6 +148,9 @@ def sample(task: str, shape: tuple[int, ...], n: int, generator: torch.Generator
     elif task == "ca110":
         tok = torch.randint(0, 2, (*shape, n), generator=generator, device=device)
         tgt = ca110_targets(tok)
+    elif task == "ca110d":
+        tok = torch.randint(0, 2, (*shape, n), generator=generator, device=device)
+        tgt = ca110_diagonal_targets(tok, spec.heads)
     elif task == "mod7":
         tok = torch.randint(0, 7, (*shape, n), generator=generator, device=device)
         tgt = mod7_targets(tok)

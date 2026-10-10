@@ -132,4 +132,62 @@ recorded amendment, before the main grid.
 
 ## Amendments
 
-(none yet)
+### Amendment 1 (2026-10-11, before any main-grid run)
+
+**1. Pilot result for `ca110` as originally formulated.** Setup: TIED, d = 32,
+T = 8, lr = 1e-3, 3,000 steps, batch 32, sequence length 256. Result:
+
+- n\* = 6 for the float model and 4 for the ternary model.
+- n\* is the same at T_test = 4 as at T_test = 8, and per-position accuracy
+  falls to the majority baseline after about position 7.
+- The model memorized lookup tables over the first few inputs. It found no
+  iterative algorithm.
+
+The lr = 3e-3 and `s5` pilot jobs were stopped unfinished because of item 3.
+
+**Why the original formulation was unlearnable at this budget.** In it, the
+interior cells of the spacetime diagram are never targets. Credit assignment
+therefore has to run through every pass. This is inherent to a P-complete
+task posed as one output per position. If every intermediate state were the
+target of a left-to-right finite-state scan, the task would be in NC1. In
+`s5` and `mod7`, by contrast, the scan state is the target.
+
+**2. Reformulation: `ca110` → `ca110d`.**
+
+- At every position s, the model outputs the spacetime diagonal through
+  (s−1, 0): K = 32 binary heads, with head k = c(s−1−k, k).
+- Head k needs k applications of rule 110 and depends only on x_0..x_(s−1).
+- The problem size is n = k + 1. acc(n) is the head's accuracy, averaged over
+  all positions and sequences, and n\* is computed over heads. The sequence
+  length is 64; censoring is at 32.
+- Every intermediate cell is now a target at some (position, head). The
+  model is still free in which order it computes them and in how many rule
+  steps each pass performs, so the family remains P-complete and the
+  algorithm is not dictated.
+- K = 32 keeps the linear readout's rank ≥ K at d ≥ 32.
+
+The pilot rule allowed a reformulation only if n\* = 0 in every pilot run.
+This change goes beyond that rule. It is made openly, before the main grid,
+because the original formulation could not test either hypothesis within the
+budget. The original pilot result is reported in the note.
+
+**3. Throughput.** The GPU is shared with other agents' jobs, and the first
+pilot ran at 0.25–0.6 s/step on the smallest configuration, which made the
+full grid infeasible. Changes:
+
+- **bf16 autocast for matmuls and attention.** The float arm therefore
+  effectively has 16-bit weights, so the W·b accounting uses b = 16 for it.
+  The W·b ratio between the extreme cells becomes about 33× for `s5` and
+  40× for `ca110d`, not 65×.
+- **The training step is captured as a CUDA graph.**
+- **Data is generated in chunks.**
+- **Batch 32 per model.** The pilot rule allowed this.
+- **Sequence length for `s5` and `mod7` goes from 256 to 128.** Censoring is
+  therefore at 128.
+
+**4. Pilot v2** (replaces the stopped pilot): TIED, d = 32, T = 8,
+b ∈ {float, ternary}, one seed, lr ∈ {1e-3, 3e-3}, 3,000 steps, on `s5`,
+`ca110d` and `mod7`. It sets the learning rate and the step budget.
+
+Hypotheses and decision rules are unchanged, apart from the censoring levels
+in items 2 and 3.
