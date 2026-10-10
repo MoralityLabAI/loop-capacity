@@ -1,0 +1,74 @@
+import random
+
+import torch
+
+from loopcap.tasks import S5_PERMS, TASKS, ca110_targets, eval_set, mod7_targets, s5_targets, sample
+
+
+def test_s5_targets_match_bruteforce():
+    rng = random.Random(0)
+    g = torch.tensor([[rng.randrange(120) for _ in range(40)] for _ in range(8)])
+    got = s5_targets(g)
+    for b in range(8):
+        p = tuple(range(5))
+        for n in range(40):
+            a = S5_PERMS[int(g[b, n])]
+            p = tuple(a[p[x]] for x in range(5))  # g_n o p_(n-1)
+            assert S5_PERMS[int(got[b, n])] == p
+
+
+def _naive_ca110_column(x):
+    """c(0, j) for j < len(x), simulated on an explicit wide window."""
+    n = len(x)
+    lo, hi = -2 * n - 2, 2 * n + 2
+    row = {k: (x[k] if 0 <= k < n else 0) for k in range(lo, hi)}
+    col = []
+    for j in range(n):
+        col.append(row[0])
+        new = {}
+        for k in range(lo + 1, hi - 1):
+            idx = 4 * row[k - 1] + 2 * row[k] + row[k + 1]
+            new[k] = (110 >> idx) & 1
+        new[lo], new[hi - 1] = 0, 0
+        row = new
+    return col
+
+
+def test_ca110_targets_match_naive():
+    rng = random.Random(1)
+    for _ in range(5):
+        x = [rng.randrange(2) for _ in range(30)]
+        got = ca110_targets(torch.tensor([x]))[0].tolist()
+        assert got == _naive_ca110_column(x)
+
+
+def test_ca110_is_causal():
+    """Changing x_k must not change targets before position k."""
+    rng = random.Random(2)
+    x = torch.tensor([[rng.randrange(2) for _ in range(64)]])
+    base = ca110_targets(x)
+    for k in (5, 20, 50):
+        y = x.clone()
+        y[0, k:] = 1 - y[0, k:]
+        assert torch.equal(ca110_targets(y)[0, :k], base[0, :k])
+
+
+def test_mod7():
+    a = torch.tensor([[3, 4, 6, 0, 1]])
+    assert mod7_targets(a).tolist() == [[3, 0, 6, 6, 0]]
+
+
+def test_sample_shapes_and_bos():
+    g = torch.Generator()
+    g.manual_seed(0)
+    for task, spec in TASKS.items():
+        x, y = sample(task, (2, 3), 16, g, torch.device("cpu"))
+        assert x.shape == (2, 3, 17) and y.shape == (2, 3, 16)
+        assert (x[..., 0] == spec.bos).all()
+        assert int(y.max()) < spec.classes
+
+
+def test_eval_set_is_fixed():
+    a = eval_set("s5", 4, 8, torch.device("cpu"))
+    b = eval_set("s5", 4, 8, torch.device("cpu"))
+    assert torch.equal(a[0], b[0]) and torch.equal(a[1], b[1])
