@@ -3,8 +3,9 @@
     python scripts/run_grid.py --steps 4000 --batch 32 --lr 1e-3 [--only tied] [--dry]
 
 Launch detached on a shared GPU with
-    vramorama run --vram 3G --owner loopcap-grid --detach --out runs_local/grid.out -- \
+    vramorama run --vram 1500M --owner loopcap-grid-1 --detach --out runs_local/grid1.out -- \
         python -u scripts/run_grid.py ...
+Several workers may run at once; each claims jobs through lock files.
 Each job writes results/runs/<job>.json (atomically) and <job>.log.jsonl.
 """
 
@@ -20,6 +21,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TS = [1, 2, 4, 8, 16, 32]
+SEQ = {"s5": 128, "mod7": 128, "ca110d": 64}
+MAIN = ("ca110d", "mod7")
 BITS = ["32", "4", "1.58"]
 CKPT_ROOT = Path(os.environ.get("LOOPCAP_CKPT", r"C:\Users\patri\Documents\Codex\loop_capacity\ckpt"))
 
@@ -70,56 +73,55 @@ def job_id(task, arm, d, T, steps_tag=""):
     return f"{task}_{arm}_d{d}_T{T}{steps_tag}"
 
 
-def grid(include_mod7: bool = True):
-    jobs = []
-    # 1) primary: TIED on both main families, cheap T first
-    for T in TS:
-        for task in ("ca110", "s5"):
-            for d in (32, 64):
-                jobs.append(dict(task=task, arm="tied", d=d, T=T, bits=BITS))
-    # 2) UNTIED-W (same parameter count)
-    for T in TS[1:]:
-        for task in ("ca110", "s5"):
-            for d in (32, 64):
-                jobs.append(dict(task=task, arm="untied_w", d=d, T=T, bits=BITS))
-    # 3) UNTIED-C (same compute), d = 32
-    for T in TS[1:]:
-        for task in ("ca110", "s5"):
-            jobs.append(dict(task=task, arm="untied_c", d=32, T=T, bits=BITS))
-    # 4) contrast family, reduced grid
-    if include_mod7:
-        for T in TS:
-            jobs.append(dict(task="mod7", arm="tied", d=32, T=T, bits=["32", "1.58"]))
-        for T in TS[1:]:
-            jobs.append(dict(task="mod7", arm="untied_w", d=32, T=T, bits=["32", "1.58"]))
+def grid(include_s5: bool = True):
+    """Most informative first: TIED on both main families (cheap T first), then
+    UNTIED-W, then UNTIED-C (d = 32). s5 did not learn in the pilot (Amendment
+    2); a small exploratory TIED d = 64 float check runs last."""
+
+    def cells(arm, ts):
+        out = []
+        for T in ts:
+            for task in MAIN:
+                ds = (32,) if arm == "untied_c" else (32, 64)
+                for d in ds:
+                    out.append(dict(task=task, arm=arm, d=d, T=T, bits=BITS))
+        return out
+
+    jobs = cells("tied", TS) + cells("untied_w", TS[1:]) + cells("untied_c", TS[1:])
+    if include_s5:
+        jobs += [dict(task="s5", arm="tied", d=64, T=T, bits=["32"]) for T in (8, 32)]
     return jobs
 
 
 def extra_long(steps_mult: int):
     """Training-limited check: 3x steps on a few TIED cells."""
     return [dict(task=task, arm="tied", d=32, T=T, bits=BITS, mult=steps_mult)
-            for task in ("ca110", "s5") for T in (8, 32)]
+            for task in MAIN for T in (8, 32)]
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--steps", type=int, required=True)
     ap.add_argument("--batch", type=int, default=32)
-    ap.add_argument("--lr", type=float, default=1e-3)
+    ap.add_argument("--lr", type=float, default=3e-3)
+    ap.add_argument("--task-lr", nargs="*", default=[], help="per-task overrides, e.g. s5=0.003")
     ap.add_argument("--seeds", nargs="+", default=["1", "2"])
     ap.add_argument("--only", default="", help="comma list of arms or tasks to keep")
     ap.add_argument("--long", type=int, default=0, help="also run the Nx-steps check")
-    ap.add_argument("--no-mod7", action="store_true")
-    ap.add_argument("--vram-gb", type=float, default=2.8)
+    ap.add_argument("--no-s5", action="store_true")
+    ap.add_argument("--quant-start", type=float, default=0.5)
+    ap.add_argument("--scale", choices=["tensor", "channel"], default="tensor")
+    ap.add_argument("--vram-gb", type=float, default=1.4)
     ap.add_argument("--dry", action="store_true")
     args = ap.parse_args()
 
+    args.lr_for = {k: float(v) for k, v in (kv.split("=") for kv in args.task_lr)}
     py = sys.executable
     out_dir = ROOT / "results" / "runs"
     out_dir.mkdir(parents=True, exist_ok=True)
     local = ROOT / "runs_local"
     local.mkdir(exist_ok=True)
-    jobs = grid(not args.no_mod7)
+    jobs = grid(not args.no_s5)
     if args.long:
         jobs += extra_long(args.long)
     if args.only:
@@ -137,7 +139,9 @@ def main():
             continue
         cmd = [py, "-u", "-m", "loopcap.train", "--task", j["task"], "--arm", j["arm"],
                "--d", str(j["d"]), "--T", str(j["T"]), "--bits", *j["bits"], "--seeds", *args.seeds,
-               "--steps", str(args.steps * mult), "--batch", str(args.batch), "--lr", str(args.lr),
+               "--steps", str(args.steps * mult), "--batch", str(args.batch),
+               "--lr", str(args.lr_for.get(j["task"], args.lr)), "--seq", str(SEQ[j["task"]]),
+               "--quant-start", str(args.quant_start), "--scale", args.scale,
                "--vram-gb", str(args.vram_gb), "--out", str(out),
                "--ckpt", str(CKPT_ROOT / f"{jid}.pt")]
         if args.dry:

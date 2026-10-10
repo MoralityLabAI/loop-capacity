@@ -49,6 +49,13 @@ class ArchSpec:
     def tensor_count(self) -> int:
         return 2 + 4 * self.n_blocks
 
+    def scale_count(self, per_channel: bool) -> int:
+        """fp32 scales a quantized model stores."""
+        if not per_channel:
+            return self.tensor_count()
+        spec = TASKS[self.task]
+        return self.d + spec.outputs + self.n_blocks * (3 * self.d + self.d + self.hidden + self.d)
+
     def to_dict(self) -> dict:
         return asdict(self) | {"params": self.param_count()}
 
@@ -136,7 +143,8 @@ def block_forward(z: torch.Tensor, wqkv, wo, w1, w2, heads: int, cos, sin) -> to
 
 
 class ModelStack(nn.Module):
-    def __init__(self, arch: ArchSpec, bits: list[float], seeds: list[int], device):
+    def __init__(self, arch: ArchSpec, bits: list[float], seeds: list[int], device,
+                 per_channel: bool = False):
         super().__init__()
         assert len(bits) == len(seeds)
         self.arch = arch
@@ -169,7 +177,7 @@ class ModelStack(nn.Module):
             self.w2.append(init((h, d), h ** -0.5 * out_scale))
         self.readout = init((d, spec.outputs), d ** -0.5)
         self.multilabel = bool(spec.heads)
-        self.quant = Quantizer(bits, device)
+        self.quant = Quantizer(bits, device, per_channel)
         self._rope = {}
 
     def rope(self, seq: int, device):
@@ -193,8 +201,11 @@ class ModelStack(nn.Module):
         return 0 if self.arch.n_blocks == 1 else t
 
     def train_loss(self, x: torch.Tensor, y: torch.Tensor, use_checkpoint: bool = True,
-                   final_weight: float = 0.5) -> torch.Tensor:
-        """Per-model loss [M]: w*CE(final) + (1-w)*mean CE over earlier depths."""
+                   final_weight: float = 0.5, size_mask: torch.Tensor | None = None) -> torch.Tensor:
+        """Per-model loss [M]: w*CE(final) + (1-w)*mean CE over earlier depths.
+
+        size_mask [M, sizes] (1 = problem size counts in the loss) implements
+        the curriculum: sizes are positions, or heads for multi-label tasks."""
         arch = self.arch
         emb_q, blocks, ro_q = self.quantized()
         e = self.embed(emb_q, x)
@@ -213,8 +224,14 @@ class ModelStack(nn.Module):
             if multilabel:
                 ce = F.binary_cross_entropy_with_logits(logits.float(), yf, reduction="none")
             else:
-                ce = F.cross_entropy(logits.reshape(-1, classes), y.reshape(-1), reduction="none")
-            return hn, ce.view(m, -1).mean(1)
+                ce = F.cross_entropy(logits.reshape(-1, classes), y.reshape(-1), reduction="none").view(y.shape)
+            if size_mask is None:
+                return hn, ce.reshape(m, -1).mean(1)
+            # ce: [M, B, N] (sizes = positions) or [M, B, N, K] (sizes = heads)
+            mask = size_mask[:, None, :] if not multilabel else size_mask[:, None, None, :]
+            num = (ce * mask).reshape(m, -1).sum(1)
+            den = (mask.expand_as(ce)).reshape(m, -1).sum(1).clamp_min(1.0)
+            return hn, num / den
 
         h = torch.zeros_like(e)
         total = torch.zeros(m, device=x.device)

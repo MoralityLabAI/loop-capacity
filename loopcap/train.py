@@ -128,7 +128,7 @@ def run(args) -> dict:
     arch = make_arch(args.task, args.arm, args.d, args.T)
     bits = [b for b in args.bits for _ in args.seeds]
     seeds = [s for _ in args.bits for s in args.seeds]
-    model = ModelStack(arch, bits, seeds, device)
+    model = ModelStack(arch, bits, seeds, device, per_channel=args.scale == "channel")
     m = model.m
     params = list(model.parameters())
     if use_graph:
@@ -143,6 +143,17 @@ def run(args) -> dict:
     stream = DataStream(args.task, m, args.batch, args.seq, gen, device, args.data_chunk)
     x_eval, y_eval = eval_set(args.task, args.eval_count, args.seq, device)
     quick = max(1, args.eval_count // 4)
+    # curriculum over problem size, decided on a separate probe set
+    sizes = TASKS[args.task].heads or args.seq
+    x_probe, y_probe = eval_set(args.task, args.probe_count, args.seq, device, seed=999)
+    horizon = [min(sizes, args.cur_start) if args.curriculum else sizes] * m
+    size_mask = torch.zeros(m, sizes, device=device)
+
+    def apply_horizon():
+        idx = torch.arange(sizes, device=device)[None, :]
+        size_mask.copy_((idx < torch.tensor(horizon, device=device)[:, None]).float())
+
+    apply_horizon()
 
     log_path = Path(args.out).with_suffix(".log.jsonl")
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -156,7 +167,7 @@ def run(args) -> dict:
 
     def train_step():
         with torch.autocast(device.type, dtype=torch.bfloat16, enabled=args.amp, cache_enabled=False):
-            loss = model.train_loss(x_s, y_s, final_weight=args.final_weight)
+            loss = model.train_loss(x_s, y_s, final_weight=args.final_weight, size_mask=size_mask)
         loss.sum().backward()
         gnorm = clip_per_model(params, m, args.clip)
         opt.step()
@@ -171,14 +182,23 @@ def run(args) -> dict:
                 g["lr"] = lr
         return lr
 
+    q_start = int(round(args.quant_start * args.steps))
+    model.quant.active = q_start == 0
+
     history = []
     t0 = time.time()
     log({"event": "start", "arch": arch.to_dict(), "bits": bits, "seeds": seeds, "args": vars(args)})
     graph = None
     loss = gnorm = None
-    warm = 3 if use_graph else 0
+    warm_until = 3 if use_graph else 0
     side = torch.cuda.Stream() if use_graph else None
     for step in range(args.steps):
+        if step == q_start and not model.quant.active:
+            # switch every model to its own bit-width; the step changes, so recapture
+            model.quant.active = True
+            graph = None
+            warm_until = step + 3 if use_graph else 0
+            log({"event": "quantize", "step": step, "elapsed": time.time() - t0})
         lr = set_lr(step)
         if step > 0:
             x, y = stream.next()
@@ -187,7 +207,7 @@ def run(args) -> dict:
         if not use_graph:
             opt.zero_grad(set_to_none=True)
             loss, gnorm = train_step()
-        elif step < warm:
+        elif step < warm_until:
             # eager warm-up steps on a side stream, as the CUDA-graph recipe requires
             side.wait_stream(torch.cuda.current_stream())
             with torch.cuda.stream(side):
@@ -201,9 +221,15 @@ def run(args) -> dict:
                 with torch.cuda.graph(graph):
                     loss, gnorm = train_step()
             graph.replay()
+        if args.curriculum and (step + 1) % args.cur_every == 0 and min(horizon) < sizes:
+            acc_p = evaluate(model, x_probe, y_probe, [arch.passes], args.eval_chunk, args.amp)[arch.passes]
+            new = [min(sizes, max(horizon[i], n_star(acc_p[i], 0.9) + args.cur_margin)) for i in range(m)]
+            if new != horizon:
+                horizon = new
+                apply_horizon()
         if (step + 1) % args.log_every == 0 or step == 0:
             log({"event": "train", "step": step + 1, "lr": lr, "loss": loss.cpu().tolist(),
-                 "gnorm": gnorm.cpu().tolist(), "elapsed": time.time() - t0})
+                 "gnorm": gnorm.cpu().tolist(), "horizon": horizon, "elapsed": time.time() - t0})
         if (step + 1) % args.eval_every == 0 or step + 1 == args.steps:
             acc = evaluate(model, x_eval[:quick], y_eval[:quick], [arch.passes], args.eval_chunk,
                            args.amp)[arch.passes]
@@ -225,7 +251,7 @@ def run(args) -> dict:
         models.append({
             "bits": bits[i], "seed": seeds[i], "params": W,
             "weight_bits": W * weight_bits(bits[i]),
-            "scale_bits": 0 if bits[i] >= 32 else 32 * arch.tensor_count(),
+            "scale_bits": 0 if bits[i] >= 32 else 32 * arch.scale_count(args.scale == "channel"),
             "final_loss": float(loss[i]),
             "history": [{"step": h["step"], "n_star_0.9": h["n_star_0.9"][i],
                          "mean_acc": h["mean_acc"][i]} for h in history],
@@ -236,6 +262,8 @@ def run(args) -> dict:
         "arch": arch.to_dict(), "steps": args.steps, "lr": args.lr, "batch": args.batch,
         "train_seconds": train_seconds, "eval_count": args.eval_count, "seq": args.seq,
         "amp": args.amp, "graph": use_graph, "final_weight": args.final_weight,
+        "quant_start": args.quant_start, "curriculum": args.curriculum, "scale": args.scale,
+        "final_horizon": horizon,
         "record": record, "models": models,
         "device": torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
         "peak_mem_gb": (torch.cuda.max_memory_allocated(device) / 2 ** 30) if device.type == "cuda" else 0.0,
@@ -283,6 +311,16 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--graph", action=argparse.BooleanOptionalAction, default=True,
                    help="capture the training step as a CUDA graph")
     p.add_argument("--low-priority", action="store_true")
+    p.add_argument("--curriculum", action=argparse.BooleanOptionalAction, default=True,
+                   help="loss covers problem sizes <= horizon; horizon = max(horizon, n*_probe + margin)")
+    p.add_argument("--cur-start", type=int, default=4)
+    p.add_argument("--cur-margin", type=int, default=8)
+    p.add_argument("--cur-every", type=int, default=100)
+    p.add_argument("--probe-count", type=int, default=256)
+    p.add_argument("--scale", choices=["tensor", "channel"], default="tensor",
+                   help="quantization scale granularity")
+    p.add_argument("--quant-start", type=float, default=0.0,
+                   help="fraction of steps trained in float before each model's quantizer turns on")
     p.add_argument("--device", default="cuda")
     p.add_argument("--out", required=True)
     p.add_argument("--ckpt", default="")

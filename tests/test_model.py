@@ -9,7 +9,7 @@ from loopcap.tasks import sample
 CPU = torch.device("cpu")
 
 
-@pytest.mark.parametrize("task", ["s5", "ca110", "mod7"])
+@pytest.mark.parametrize("task", ["s5", "ca110", "ca110d", "mod7"])
 @pytest.mark.parametrize("d", [32, 64])
 @pytest.mark.parametrize("T", [1, 2, 4, 8, 16, 32])
 def test_untied_matched_within_two_percent(task, d, T):
@@ -60,3 +60,12 @@ def test_n_star():
     assert n_star([1, 1, 0.95, 0.5, 1], 0.9) == 3
     assert n_star([0.2, 1], 0.9) == 0
     assert n_star([1, 1], 0.9) == 2
+
+
+def test_per_channel_quantizer_levels():
+    torch.manual_seed(1)
+    w = torch.randn(2, 16, 8)
+    q = Quantizer([4, 1.58], CPU, per_channel=True)(w)
+    for j in range(8):
+        assert q[1, :, j].unique().numel() <= 3
+        assert q[0, :, j].unique().numel() <= 15

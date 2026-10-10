@@ -191,3 +191,56 @@ b ∈ {float, ternary}, one seed, lr ∈ {1e-3, 3e-3}, 3,000 steps, on `s5`,
 
 Hypotheses and decision rules are unchanged, apart from the censoring levels
 in items 2 and 3.
+
+### Amendment 2 (2026-10-11, before any main-grid run)
+
+The GPU stayed fully occupied by other sessions, so pilot v2 ran on the CPU.
+Every run: TIED, d = 32, T = 8, one seed.
+
+**Pilot v2.** `ca110d`, lr ∈ {1e-3, 3e-3}, 3,000 steps, ternary trained from
+scratch:
+
+- n\* = 5 (float, lr 1e-3) and 6 (float, lr 3e-3), out of a one-step-per-pass
+  maximum of 9.
+- Ternary from scratch was stuck at n\* = 2 at both learning rates.
+
+**Pilot v2.** `s5`, lr ∈ {1e-3, 3e-3}, half float then quantized: n\* = 0
+everywhere, and even the position-1 copy reached only 12–39%. With uniformly
+random targets beyond the solvable horizon, the 128 dense positions bury the
+signal from the one or two easy positions.
+
+**Pilot v3.** lr 3e-3, curriculum (item 2 below), half float then quantized:
+
+| family | float | ternary (per-tensor scale) | notes |
+|---|---|---|---|
+| `ca110d` | n\* = 9; n\*(T_test = 1, 2, 4, 8) = 3, 5, 7, 9 | n\* = 5 | float collapses at T_test = 16 |
+| `mod7` | n\* = 11; n\*(T_test) = 2, 3, 6, 11 | n\* = 2 | ternary collapsed at the precision switch and recovered only to 2 |
+| `s5` | n\* = 1 | n\* = 1 | no composition learned |
+
+Changes for the main grid:
+
+1. **Learning rate 3e-3** for all families.
+2. **Curriculum over problem size (all arms, same rule).** The loss counts
+   only sizes up to a per-model horizon H, starting at 4. Every 100 steps,
+   H ← max(H, n\*\_probe + 8), where n\*\_probe is measured on a separate
+   256-sequence probe set (seed 999), not on the evaluation set. Evaluation
+   always covers every size.
+3. **Float warm-start.** Every model trains in float for the first half of
+   its steps. Then its own quantizer switches on, and it trains quantized for
+   the second half. Total steps are equal across bit-widths. This makes the
+   precision axis test whether a b-bit network can *hold* a solution, rather
+   than whether straight-through training bootstraps one from scratch, which
+   failed in pilot v2.
+4. **`s5` leaves the main grid.** It is reported as not learned at this
+   scale and budget. An exploratory TIED d = 64 float check at T ∈ {8, 32}
+   runs at the end of the queue.
+5. **`mod7` becomes a full main family**, with the same grid as `ca110d`:
+   d ∈ {32, 64}, three bit-widths, all three arms. The verdict rules apply to
+   `ca110d` and `mod7`.
+6. **Steps: 6,000 per job.** The 3× check uses TIED, d = 32,
+   T ∈ {8, 32}, at 18,000 steps.
+
+7. **Quantization scales stay per tensor**, as pre-registered. A
+   per-output-channel variant was tried on `mod7`: int4 reached n\* = 8 and
+   ternary n\* = 2, against 11 and 2 with per-tensor scales. It did not rescue
+   ternary, so the simpler pre-registered scheme is kept.

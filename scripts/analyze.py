@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import statistics
 from collections import defaultdict
 from pathlib import Path
@@ -20,14 +21,17 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNS = ROOT / "results" / "runs"
-FIG = ROOT / "figures"
+RUNS = Path(os.environ.get("LOOPCAP_RUNS", ROOT / "results" / "runs"))
+FIG = Path(os.environ.get("LOOPCAP_FIG", ROOT / "figures"))
 TS = [1, 2, 4, 8, 16, 32]
 BITS = [32.0, 4.0, 1.58]
 B_EFF = {32.0: 16.0, 4.0: math.log2(15), 1.58: math.log2(3)}  # float arm runs bf16 matmuls
 B_LABEL = {32.0: "float (bf16)", 4.0: "int4", 1.58: "ternary"}
 THETA = "0.9"
-SEQ = 256
+CENSOR = {"s5": 128, "mod7": 128, "ca110d": 32, "ca110": 256}
+FAMILIES = ("ca110d", "mod7", "s5")
+SIZE_LABEL = {"s5": "position n (compositions)", "mod7": "position n (additions)",
+              "ca110d": "head n (n-1 rule-110 steps)"}
 
 # reference palette, light mode (first three slots validate all-pairs)
 COL = {32.0: "#2a78d6", 4.0: "#eb6834", 1.58: "#1baf7a"}
@@ -102,9 +106,10 @@ def spearman(x, y):
 def verdicts(c, rows):
     out = {}
     params = {(r["task"], r["arm"], r["d"]): r["params"] for r in rows if r["T"] == 32}
-    for task in ("s5", "ca110", "mod7"):
-        ds = (32, 64) if task != "mod7" else (32,)
-        bits = BITS if task != "mod7" else [32.0, 1.58]
+    for task in FAMILIES:
+        ds = (32, 64)
+        bits = BITS
+        SEQ = CENSOR[task]
         grow, sat, per_cell = 0, 0, {}
         lv = {}
         for d in ds:
@@ -129,7 +134,7 @@ def verdicts(c, rows):
             wb = [params.get((task, "tied", d), 0) * B_EFF[b] for (d, b) in lv]
             res["spearman_logWb_n32"] = spearman([math.log(x) for x in wb], list(lv.values()))
             res["tracking"] = res["spearman_logWb_n32"] >= 0.6 and lv[hi] >= 2 * lv[lo]
-            need = 4 if task != "mod7" else max(1, round(4 / 6 * res["n_cells"]))
+            need = 4
             if grow >= need and res["insensitive"]:
                 res["verdict"] = "H_compute supported"
             elif sat >= need and res["tracking"]:
@@ -174,7 +179,8 @@ def secondary(rows, c):
 def regression(c, rows):
     params = {(r["task"], r["arm"], r["d"]): r["params"] for r in rows}
     out = {}
-    for task in ("s5", "ca110", "mod7"):
+    for task in FAMILIES:
+        SEQ = CENSOR[task]
         X, y = [], []
         for (tk, arm, d, b, T), v in c.items():
             n = med(v)
@@ -190,13 +196,13 @@ def regression(c, rows):
 
 
 # ------------------------------------------------------------------ figures
-def ylog(ax):
+def ylog(ax, top):
     ax.set_yscale("log", base=2)
-    ax.set_ylim(0.7, SEQ * 1.45)
-    ticks = [1, 2, 4, 8, 16, 32, 64, 128, 256]
-    ax.set_yticks(ticks)
-    ax.set_yticklabels([str(t) for t in ticks])
-    ax.axhline(SEQ, color=INK2, lw=0.8, ls="-", alpha=0.6)
+    ax.set_ylim(0.7, top * 1.45)
+    ticks = [t for t in [1, 2, 4, 8, 16, 32, 64, 128, 256] if t <= top]
+    ax.set_yticks([0.85] + ticks)
+    ax.set_yticklabels(["0"] + [str(t) for t in ticks])
+    ax.axhline(top, color=INK2, lw=0.8, ls="-", alpha=0.6)
 
 
 def xlog(ax, ts):
@@ -211,15 +217,15 @@ def floor0(v):
 
 
 def fig_nstar_vs_T(c, task):
-    ds = (32, 64) if task != "mod7" else (32,)
-    bits = BITS if task != "mod7" else [32.0, 1.58]
+    ds = (32, 64)
+    bits = BITS
     fig, axes = plt.subplots(1, len(ds), figsize=(5.2 * len(ds), 4.2), squeeze=False, sharey=True)
+    top = CENSOR[task]
     for ax, d in zip(axes[0], ds):
-        ref = [T if task == "ca110" else T + 1 for T in TS] if task != "mod7" else None
-        if ref:
-            ax.plot(TS, ref, color=INK2, lw=1, ls="-", marker=None, alpha=0.7)
-            ax.annotate("hand-built ternary block", (TS[2], ref[2]), xytext=(4, 6),
-                        textcoords="offset points", color=INK2, fontsize=8)
+        ref = [min(T + 1, top) for T in TS]
+        ax.plot(TS, ref, color=INK2, lw=1, ls="-", marker=None, alpha=0.7)
+        ax.annotate("one serial step per pass", (TS[1], ref[1]), xytext=(4, 8),
+                    textcoords="offset points", color=INK2, fontsize=8)
         for arm in ("tied", "untied_w", "untied_c"):
             for b in bits:
                 pts = [(T, med(c.get((task, arm, d, b, T), []))) for T in TS]
@@ -230,11 +236,11 @@ def fig_nstar_vs_T(c, task):
                         **ARM_STYLE[arm], markeredgecolor=SURF, markeredgewidth=1.2,
                         alpha=1.0 if arm == "tied" else 0.75)
         xlog(ax, TS)
-        ylog(ax)
+        ylog(ax, top)
         ax.set_title(f"{task}, d = {d}", loc="left", fontsize=11)
         ax.set_xlabel("T (passes for tied; layers for untied)")
     axes[0][0].set_ylabel(f"n* (largest size solved at acc >= {THETA})")
-    axes[0][0].text(1.02, SEQ * 1.08, "all 256 positions solved", color=INK2, fontsize=8)
+    axes[0][0].text(1.02, top * 1.08, f"all {top} sizes solved (censored)", color=INK2, fontsize=8)
     handles = [plt.Line2D([], [], color=COL[b], lw=2, label=B_LABEL[b]) for b in bits]
     handles += [plt.Line2D([], [], color=INK2, **ARM_STYLE[a], label=ARM_LABEL[a])
                 for a in ("tied", "untied_w", "untied_c")]
@@ -245,7 +251,7 @@ def fig_nstar_vs_T(c, task):
 
 
 def fig_test_time(rows, task):
-    ds = (32, 64) if task != "mod7" else (32,)
+    ds = (32, 64)
     bits = [32.0, 1.58]
     fig, axes = plt.subplots(len(bits), len(ds), figsize=(5.0 * len(ds), 3.6 * len(bits)),
                              squeeze=False, sharex=True, sharey=True)
@@ -266,7 +272,7 @@ def fig_test_time(rows, task):
                 ax.plot([T], floor0([ys[k]]), marker="o", markersize=8, color=ramp[T],
                         markeredgecolor=INK, markeredgewidth=1.0)
             xlog(ax, tt)
-            ylog(ax)
+            ylog(ax, CENSOR[task])
             ax.set_title(f"{task}, d = {d}, {B_LABEL[b]}", loc="left", fontsize=10)
             if i == len(bits) - 1:
                 ax.set_xlabel("passes at test time")
@@ -297,7 +303,7 @@ def fig_heatmap(rows, task, d=64, b=32.0, seed=1):
     ax.set_yticks(range(len(Ts)))
     ax.set_yticklabels([str(T) for T in Ts])
     ax.set_ylabel("T (train = test)")
-    ax.set_xlabel("problem size n (position)")
+    ax.set_xlabel(SIZE_LABEL.get(task, "problem size n"))
     ax.grid(False)
     cb = fig.colorbar(im, ax=ax, pad=0.01)
     cb.set_label("accuracy")
@@ -310,8 +316,8 @@ def fig_heatmap(rows, task, d=64, b=32.0, seed=1):
 
 def fig_wb(c, rows):
     params = {(r["task"], r["arm"], r["d"]): r["params"] for r in rows}
-    tasks = [t for t in ("s5", "ca110", "mod7") if any(k[0] == t for k in c)]
-    fig, axes = plt.subplots(1, len(tasks), figsize=(4.6 * len(tasks), 3.8), squeeze=False, sharey=True)
+    tasks = [t for t in FAMILIES if any(k[0] == t for k in c)]
+    fig, axes = plt.subplots(1, len(tasks), figsize=(4.6 * len(tasks), 3.8), squeeze=False)
     for ax, task in zip(axes[0], tasks):
         for arm, mk in (("tied", "o"), ("untied_w", "s")):
             for (tk, a, d, b, T), v in c.items():
@@ -321,7 +327,7 @@ def fig_wb(c, rows):
                 ax.scatter([wb], floor0([med(v)]), color=COL[b], marker=mk, s=60 if d == 64 else 34,
                            edgecolor=SURF, linewidth=1.2, zorder=3)
         ax.set_xscale("log")
-        ylog(ax)
+        ylog(ax, CENSOR[task])
         ax.set_xlabel("weight bits W*b")
         ax.set_title(f"{task}, T = 32", loc="left", fontsize=11)
     axes[0][0].set_ylabel("n*")
@@ -336,7 +342,7 @@ def fig_wb(c, rows):
 
 
 def fig_training(rows):
-    tasks = [t for t in ("s5", "ca110", "mod7") if any(r["task"] == t for r in rows)]
+    tasks = [t for t in FAMILIES if any(r["task"] == t for r in rows)]
     fig, axes = plt.subplots(1, len(tasks), figsize=(4.6 * len(tasks), 3.4), squeeze=False)
     ramp = {1: "#86b6ef", 2: "#5598e7", 4: "#3987e5", 8: "#2a78d6", 16: "#1c5cab", 32: "#0d366b"}
     for ax, task in zip(axes[0], tasks):
@@ -347,7 +353,7 @@ def fig_training(rows):
             ax.plot([x["step"] for x in h], floor0([x["n_star_0.9"] for x in h]), color=ramp[r["T"]],
                     lw=1.4, ls="-" if r["seed"] == 1 else "--",
                     label=f"T={r['T']}" if r["seed"] == 1 else None)
-        ylog(ax)
+        ylog(ax, CENSOR[task])
         ax.set_xlabel("training step")
         ax.set_title(f"{task}: n* during training (tied, d=32, float)", loc="left", fontsize=9.5)
     axes[0][0].set_ylabel("n* (512 held-out sequences)")
@@ -389,16 +395,16 @@ def main():
     summary = {"verdicts": ver, "regression": reg, "secondary": sec,
                "long_runs": {str(k): v for k, v in cl.items()},
                "cells": {str(k): v for k, v in c.items()}}
-    (ROOT / "results" / "summary.json").write_text(json.dumps(summary, indent=1, default=float),
+    (RUNS.parent / "summary.json").write_text(json.dumps(summary, indent=1, default=float),
                                                     encoding="utf-8")
     md = ["# Results summary (generated by scripts/analyze.py)", "",
           f"n* at accuracy >= {THETA}; median over seeds (per-seed values in parentheses). "
-          f"256 means every position solved (censored).", ""]
-    for task in ("s5", "ca110", "mod7"):
+          f"Censoring levels: {CENSOR['s5']} for s5 and mod7, {CENSOR['ca110d']} for ca110d.", ""]
+    for task in FAMILIES:
         if not any(k[0] == task for k in c):
             continue
-        ds = (32, 64) if task != "mod7" else (32,)
-        bits = BITS if task != "mod7" else [32.0, 1.58]
+        ds = (32, 64)
+        bits = BITS
         md += [f"## {task}", "", f"**Verdict: {ver[task]['verdict']}** "
                f"(cells growing {ver[task]['grow']}/{ver[task]['n_cells']}, "
                f"saturating {ver[task]['saturate']}/{ver[task]['n_cells']}"
@@ -429,12 +435,12 @@ def main():
     long_lines = [f"- {k}: 3x steps n* = {v}, base n* = {c.get(k)}" for k, v in cl.items()]
     if long_lines:
         md += ["## 3x-steps check", ""] + long_lines + [""]
-    (ROOT / "results" / "summary.md").write_text("\n".join(md), encoding="utf-8")
-    for task in ("s5", "ca110", "mod7"):
+    (RUNS.parent / "summary.md").write_text("\n".join(md), encoding="utf-8")
+    for task in FAMILIES:
         if any(k[0] == task for k in c):
             fig_nstar_vs_T(c, task)
             fig_test_time(rows, task)
-            fig_heatmap(rows, task, d=64 if task != "mod7" else 32)
+            fig_heatmap(rows, task, d=64)
     fig_wb(c, rows)
     fig_training(rows)
     print("\n".join(md))
