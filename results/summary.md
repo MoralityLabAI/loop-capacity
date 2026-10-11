@@ -24,6 +24,14 @@ n* at accuracy >= 0.9; median over seeds (per-seed values in parentheses). Censo
 | | 64 | int4 | – | 7 (7/7) | 9 (10/8) | 11 (11/11) | 11 (11/11) | 6.5 (7/6) |
 | | 64 | ternary | – | 7 (7/7) | 8.5 (8/9) | 8 (8/8) | 6 (6/6) | 3.5 (4/3) |
 
+| untied_c | d | b | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---|---|---|---|---|---|---|---|
+| | 32 | float (bf16) | – | 9 (9/9) | 13.5 (13/14) | 16.5 (16/17) | 19.5 (18/21) | 23.5 (22/25) |
+| | 32 | int4 | – | 6.5 (7/6) | 11 (11/11) | 14 (14/14) | 17.5 (18/17) | 20.5 (19/22) |
+| | 32 | ternary | – | 6 (6/6) | 8.5 (8/9) | 11.5 (11/12) | 13 (13/13) | 16 (15/17) |
+
+Across all arms (81 uncensored cells): log2 n* = 0.24 log2 W + 0.18 log2 (W x passes) + 0.26 log2 b + const, R2 = 0.85 (W and b only: 0.69; compute and b only: 0.72).
+
 Fit log2 n* = -3.33 + 0.36 log2 W + 0.26 log2 b + 0.24 log2 T over 36 uncensored tied cells.
 
 Test-time passes (tied, median over seeds and bit-widths): n*(2T)/n*(T) by training T:
@@ -52,12 +60,20 @@ Training-limited flags (n* rose >= 10% in the last 20% of steps): 14/72 tied mod
 
 | untied_w | d | b | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
 |---|---|---|---|---|---|---|---|---|
-| | 32 | float (bf16) | – | 20.5 (32/9) | 16.5 (24/9) | 3 (3/3) | 3 (3/3) | – |
-| | 32 | int4 | – | 3 (3/3) | 2 (1/3) | 2 (2/2) | 2.5 (3/2) | – |
-| | 32 | ternary | – | 2.5 (3/2) | 1 (1/1) | 1.5 (2/1) | 1 (1/1) | – |
-| | 64 | float (bf16) | – | 37.5 (22/53) | 31 (14/48) | 30.5 (13/48) | 13 (11/15) | – |
-| | 64 | int4 | – | 7.5 (8/7) | 13.5 (6/21) | 14.5 (12/17) | 8.5 (8/9) | – |
-| | 64 | ternary | – | 6.5 (8/5) | 11.5 (6/17) | 4 (5/3) | 3.5 (4/3) | – |
+| | 32 | float (bf16) | – | 20.5 (32/9) | 16.5 (24/9) | 3 (3/3) | 3 (3/3) | 3.5 (4/3) |
+| | 32 | int4 | – | 3 (3/3) | 2 (1/3) | 2 (2/2) | 2.5 (3/2) | 2.5 (3/2) |
+| | 32 | ternary | – | 2.5 (3/2) | 1 (1/1) | 1.5 (2/1) | 1 (1/1) | 1 (1/1) |
+| | 64 | float (bf16) | – | 37.5 (22/53) | 31 (14/48) | 30.5 (13/48) | 13 (11/15) | 4.5 (5/4) |
+| | 64 | int4 | – | 7.5 (8/7) | 13.5 (6/21) | 14.5 (12/17) | 8.5 (8/9) | 3.5 (4/3) |
+| | 64 | ternary | – | 6.5 (8/5) | 11.5 (6/17) | 4 (5/3) | 3.5 (4/3) | 2 (2/2) |
+
+| untied_c | d | b | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---|---|---|---|---|---|---|---|
+| | 32 | float (bf16) | – | 25.5 (14/37) | 30.5 (13/48) | 64 (79/49) | 34.5 (21/48) | 53 (29/77) |
+| | 32 | int4 | – | 4.5 (3/6) | 6 (6/6) | 24.5 (23/26) | 21 (15/27) | 37.5 (24/51) |
+| | 32 | ternary | – | 3 (3/3) | 8.5 (7/10) | 13.5 (13/14) | 17 (13/21) | 27.5 (15/40) |
+
+Across all arms (80 uncensored cells): log2 n* = 0.37 log2 W + 0.39 log2 (W x passes) + 0.65 log2 b + const, R2 = 0.78 (W and b only: 0.62; compute and b only: 0.72).
 
 Fit log2 n* = -7.33 + 0.55 log2 W + 0.77 log2 b + 0.42 log2 T over 36 uncensored tied cells.
 
@@ -71,3 +87,26 @@ Test-time passes (tied, median over seeds and bit-widths): n*(2T)/n*(T) by train
 - T=32: 1.34 (n=T: 35, 2T: 49, 4T: 49)
 
 Training-limited flags (n* rose >= 10% in the last 20% of steps): 31/72 tied models.
+
+## s5
+
+**Verdict: incomplete** (cells growing 0/6, saturating 0/6)
+
+| tied | d | b | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---|---|---|---|---|---|---|---|
+| | 64 | float (bf16) | – | – | – | 1 (1/1) | – | – |
+
+Test-time passes (tied, median over seeds and bit-widths): n*(2T)/n*(T) by training T:
+
+- T=8: 1.00 (n=T: 1, 2T: 1, 4T: 1)
+
+Training-limited flags (n* rose >= 10% in the last 20% of steps): 0/2 tied models.
+
+## 3x-steps check
+
+- ('ca110d', 'tied', 32, 32.0, 16): 3x steps n* = [17, 17], base n* = [13, 13]
+- ('ca110d', 'tied', 32, 4.0, 16): 3x steps n* = [9, 11], base n* = [8, 9]
+- ('ca110d', 'tied', 32, 1.58, 16): 3x steps n* = [6, 6], base n* = [6, 5]
+- ('ca110d', 'tied', 32, 32.0, 8): 3x steps n* = [15, 15], base n* = [11, 12]
+- ('ca110d', 'tied', 32, 4.0, 8): 3x steps n* = [8, 9], base n* = [9, 2]
+- ('ca110d', 'tied', 32, 1.58, 8): 3x steps n* = [6, 6], base n* = [6, 6]

@@ -2,7 +2,62 @@
 
 *Capability per parameter in weight-tied networks: a theory note and an experiment.*
 
-<!-- RESULTS-SUMMARY -->
+## Summary
+
+**The two claims are both true. They use different notions of capability.**
+
+- **Claim A (counting).** W weights of b bits realize at most 2^{Wb}
+  functions, at any depth and any number of loops. A single weight vector
+  fixes the whole family f_T, so looping adds at most log2 T bits. This caps
+  *how many* targets a network can hold, equivalently its description length:
+  K(f) ≲ Wb + O(log T).
+- **Claim B (computation).** A weight-tied block with poly(ℓ) ternary weights
+  runs any ℓ-bit program for any number of steps T. This caps nothing about
+  *how much computation* the held targets may need.
+- **Parameter bits pay for description length; passes pay for running time.**
+  The repository checks B constructively. An 84-weight ternary rule-110 block
+  and a ternary S5 block solve instances of size T (rule 110) or T + 1 (S5)
+  for every T.
+
+**In learned models, neither pre-registered hypothesis passes cleanly.** The
+verdict is *mixed* for both families.
+
+- **Rule-110 rollout (`ca110d`).** Reach grows with passes, then levels off.
+  The plateau heights are ordered by W·b, but they sit two to three orders of
+  magnitude below what the bits could represent. They behave like learning
+  ceilings: 3× training steps lift them by about 30%, and the precision gap
+  opens at the moment of quantization.
+- **Running sum mod 7 (`mod7`).** Quantized models trained at T = 32 learned
+  a sequential scan. At d = 64, ternary and float converge to the same reach
+  (n\* ≈ 35). Running the same weights for 64 passes at test time extends a
+  ternary model from 34.5 to 61, with no new parameters. Here passes
+  substitute for weight bits outright.
+- **Matched-W and matched-compute arms.**
+  - A tied model beats an untied model *with the same parameter count* once
+    T ≥ 8.
+  - It falls short of an untied model *with the same compute*
+    (T× the parameters): 12.5 vs 23.5 at T = 32 on `ca110d`.
+  - Across all arms, n\* depends on parameters and on parameters × passes
+    with comparable exponents, plus weight precision.
+
+**Implication** (§4): a parameter count bounds memorization, not serial
+reach. For looped models track parameters × passes *and* parameters, and
+treat both as predictive only once the training recipe demonstrably finds the
+iterative algorithm.
+
+Deliverables:
+
+- this note;
+- the code in `loopcap/`;
+- the pre-registration with dated amendments, `docs/preregistration.md`;
+- per-job results in `results/runs/`, and the tables in `results/summary.md`;
+- figures in `figures/`.
+
+The plots of solvable n against T are `figures/nstar_vs_T_ca110d.png` and
+`figures/nstar_vs_T_mod7.png`. Test-time passes are in
+`figures/test_time_*.png`, and the compute and parameter view is
+`figures/nstar_vs_compute.png`.
+
 
 ---
 
@@ -403,4 +458,282 @@ All pilots used TIED, d = 32, T = 8, one seed.
 These pilots are where most of the time went. They are also the clearest
 evidence on how wide the representation-versus-learning gap is (§3).
 
-<!-- RESULTS -->
+---
+
+## 3. Results
+
+All numbers come from `results/summary.md` and `results/runs/*.json`, which
+`scripts/analyze.py` generates. n\* is at θ = 0.9 and is the median of 2
+seeds. Figures are in `figures/`.
+
+### 3.1 Pre-registered verdicts
+
+| family | cells growing (of 6) | cells saturating (of 6) | Wb-insensitive | Wb-tracking (Spearman) | verdict |
+|---|---|---|---|---|---|
+| `ca110d` | 0 | 3 | no (5.5 vs 22) | yes (0.94) | **mixed** |
+| `mod7` | 4 | 0 | no (4.5 vs 36.5) | yes (0.83) | **mixed** |
+
+Neither hypothesis passes as written:
+
+- In `ca110d`, n\* rises with T and then levels off at heights ordered by W·b.
+  Only 3 of 6 cells meet the saturation rule; the other 3 still creep
+  upward.
+- In `mod7`, most cells keep growing. But the smallest-budget cell (d = 32,
+  ternary) never gets going, so the family fails the Wb-insensitivity test.
+
+The pre-registered rules cannot tell a *counting* ceiling from a *learning*
+ceiling that happens to scale with W·b. Sections 3.2–3.5 separate the two.
+
+### 3.2 `ca110d`: growth, then plateaus ordered by W·b
+
+TIED n\*:
+
+| d | b | T=1 | 2 | 4 | 8 | 16 | 32 |
+|---|---|---|---|---|---|---|---|
+| 32 | float | 5.5 | 8 | 10 | 11.5 | 13 | 12.5 |
+| 32 | int4 | 4 | 5.5 | 6 | 5.5 | 8.5 | 9 |
+| 32 | ternary | 3.5 | 4.5 | 5.5 | 6 | 5.5 | 5.5 |
+| 64 | float | 7 | 10 | 14.5 | 19 | 21.5 | 22 |
+| 64 | int4 | 6 | 7 | 10.5 | 13 | 14.5 | 16.5 |
+| 64 | ternary | 5.5 | 7 | 8.5 | 9 | 10 | 11 |
+
+- **Passes help, but with diminishing returns.** For d = 32 float, n\* goes
+  from 5.5 at T = 1 to 13 at T = 16. One pass already computes about 4–6
+  rule steps; extra passes add fewer than one step each.
+- **Width buys steps per pass.** At T = 8, d = 64 reaches 19 against 11.5
+  for d = 32.
+- **The least-squares fit over the 36 uncensored TIED cells** is
+  n\* ∝ W^0.36 · b^0.26 · T^0.24. W and T enter with similar, small exponents.
+- **These plateaus are not the counting ceiling.**
+  - The smallest budget here, d = 32 ternary, still holds about 21 kbit of
+    weights.
+  - A hand-built ternary block of 84 weights (about 133 bits) solves any n,
+    given n passes (Theorem B, checked in `tests/test_construct.py`).
+  - So every learned model sits two to three orders of magnitude below what
+    its bits could represent.
+- **The precision gap opens at the precision switch.**
+  - The ternary-designated models were float until step 3,000. At that point
+    they had reached n\* ≈ 11–12, the same as the float runs.
+  - Quantizing dropped them to 3–4, and in the remaining 3,000 steps they
+    recovered only to 5–6.
+  - The W·b ordering is therefore largely *how much of a float solution
+    survives quantization* in the time allowed, not how much the bits can
+    hold.
+
+### 3.3 `mod7`: shortcuts at small T, scans at large T
+
+TIED n\*:
+
+| d | b | T=1 | 2 | 4 | 8 | 16 | 32 |
+|---|---|---|---|---|---|---|---|
+| 32 | float | 10.5 | 21 | 38 | 13.5 | 23 | 35.5 |
+| 32 | int4 | 4.5 | 2.5 | 2.5 | 6.5 | 11 | 25 |
+| 32 | ternary | 2.5 | 2 | 2.5 | 3.5 | 4.5 | 4.5 |
+| 64 | float | 41 | 36 | 43.5 | 24.5 | 40 | 36.5 |
+| 64 | int4 | 4 | 10.5 | 15 | 16.5 | 22.5 | 38 |
+| 64 | ternary | 0.5 | 8 | 8.5 | 7.5 | 16.5 | 34.5 |
+
+Float models at T = 1 already reach n\* = 41 (d = 64). Theory says how: a
+running sum mod 7 can be done in constant depth by counting with attention.
+The catch is that this route needs precision that grows with n. Quantization
+removes that route, and at T = 1 int4 and ternary models reach only 0.5–4.5.
+
+With more passes, the quantized models recover the reach by iterating:
+
+- **d = 64 ternary** goes 0.5 → 8.5 → 16.5 → 34.5 at T = 1, 4, 16, 32.
+- **d = 64 int4** goes 4 → 15 → 22.5 → 38.
+
+At T = 32 every d = 64 cell, float or quantized, lands at 35–38. The
+roughly 10× gap in weight bits between float and ternary has been closed by passes.
+
+### 3.4 Test-time passes
+
+The heaviest-trained models change behaviour (`figures/test_time_*.png`).
+
+**Run at fewer or more passes than they were trained with, `mod7` models
+trained at T = 32 trace a sequential scan.** Their n\* follows the pass count
+almost one-for-one: 1, 2, 4, 8, 17, 35 at 1–32 passes. They keep going past
+the training depth:
+
+| model (trained at T = 32) | n\* at 32 passes | 64 passes | 128 passes |
+|---|---|---|---|
+| d = 64 ternary | 34.5 | 61 | 60 |
+| d = 64 int4 | 38 | 49.5 | 49 |
+| d = 32 float | 35.5 | 50 | 45.5 |
+
+This is the hand-built construction's signature (n\* = T + 1), arrived at by
+gradient descent. It is the clearest evidence here that a fixed set of b-bit
+weights turns extra computation into larger solved instances.
+
+**Models trained at small T learned shortcuts that are not stable.** They
+reach n\* > T at their training depth, but collapse to n\* ≈ 0 at 2T. So the
+algorithm learned depends on the training depth: shortcuts at shallow T,
+scans at deep T.
+
+**`ca110d` models trained at T = 32 are stable but do not improve.** At 64
+test passes they give 12 (d = 32 float) and 21.5 (d = 64 float), against
+12.5 and 22 at 32. Models trained at T ≤ 16 collapse beyond 2T.
+
+### 3.5 Tied vs untied
+
+**At the same parameter count (UNTIED-W), the tied model wins once T ≥ 8.**
+
+| ca110d n\* | T = 4 | T = 8 | T = 16 | T = 32 |
+|---|---|---|---|---|
+| tied, d = 32 float | 10 | 11.5 | 13 | 12.5 |
+| untied, same W | 9.5 | 7.5 | 7 | 7 |
+
+UNTIED-W peaks at T = 4–8 and then declines as its layers become too narrow.
+The decline is steeper at lower precision: ternary falls from 4.5 to 2.5.
+Spreading a fixed weight budget over more distinct layers costs capability;
+spending it again on more passes does not. The same holds on `mod7`: at
+d = 64, T = 16, tied int4 reaches 22.5 against 8.5 untied, and tied ternary
+16.5 against 3.5.
+
+**At the same compute (UNTIED-C: same depth, T× the parameters),** the untied model wins, and the gap widens with T.
+
+| `ca110d` n\*, d = 32 | T = 2 | 4 | 8 | 16 | 32 |
+|---|---|---|---|---|---|
+| tied, float | 8 | 10 | 11.5 | 13 | 12.5 |
+| untied same compute, float | 9 | 13.5 | 16.5 | 19.5 | 23.5 |
+| tied, ternary | 4.5 | 5.5 | 6 | 5.5 | 5.5 |
+| untied same compute, ternary | 6 | 8.5 | 11.5 | 13 | 16 |
+
+- **The tied-to-untied ratio** falls from 0.89 at T = 2 to 0.53 at T = 32.
+  From T = 8 on, it is outside the pre-registered 0.75–1.33 band that would
+  have made "parameters × passes" the currency.
+- **On `mod7` at d = 32 the same holds for the quantized models.** At
+  T = 32, tied ternary reaches 4.5 against 27.5 untied, and tied int4 25
+  against 37.5. The float comparison is too noisy to read.
+- **The tied model is not an untied model with W·T parameters.** Both do the
+  same arithmetic per token, at the same depth. At equal compute, distinct
+  parameters buy more reach.
+- **A wider tied block closes most of the gap.** Tied d = 64 at T = 32 has
+  51k parameters and reaches n\* = 22. Untied same-compute d = 32 at T = 32
+  has 394k parameters and reaches 23.5. That is the same reach with 8× fewer
+  parameters and 4× more compute.
+
+**Across all arms** (`results/summary.md`, `figures/nstar_vs_compute.png`), one
+power law fits the uncensored cells:
+
+| family | fit | R² |
+|---|---|---|
+| `ca110d` | n\* ∝ W^0.24 · (W·T)^0.18 · b^0.26 | 0.85 |
+| `mod7` | n\* ∝ W^0.37 · (W·T)^0.39 · b^0.65 | 0.78 |
+
+Compute with b explains more variance than parameters with b: 0.72 against
+0.69 on `ca110d`, and 0.72 against 0.62 on `mod7`. Among the float `ca110d`
+models alone the split is 0.74 against 0.46. But the best fit needs both.
+
+
+### 3.6 Is the plateau a counting ceiling or a training ceiling?
+
+Three lines of evidence say training:
+
+1. **Constructions.** Ternary blocks of 84 weights (rule 110) and about 23k
+   weights (S5) represent the sequential algorithms exactly, for any T.
+   Every trained cell has at least about 20 kbit of weights.
+2. **Quantization damage.** The ternary/float gap appears at the
+   precision-switch step, not as a capacity limit approached gradually
+   (§3.2).
+3. **3× training steps:** the 3× check has finished for `ca110d`. There, float n\* rises by
+about 30%:
+
+| family, T | float n\* (base → 3×) | int4 | ternary |
+|---|---|---|---|
+| `ca110d`, T = 8 | 11.5 → 15 | 5.5 → 8.5 | 6 → 6 |
+| `ca110d`, T = 16 | 13 → 17 | 8.5 → 10 | 5.5 → 6 |
+
+<!-- MOD7-LONG -->
+
+At the longer budget, `ca110d` n\*(16)/n\*(8) is 1.13. The apparent stall
+between T = 16 and T = 32 at the base budget is therefore partly a training
+limit. The quantized models gain much less, which fits a slow recovery from
+quantization damage. It does not fit a capacity limit, since their bits are
+nowhere near binding.
+
+
+The pre-registered training-limited flag (n\* still rising by ≥ 10% over the
+last 20% of steps) fired for 14 of 72 TIED `ca110d` models and 31 of 72
+`mod7` models.
+
+### 3.7 `s5` (exploratory)
+
+Tied, d = 64, float, two seeds, 6,000 steps, with the curriculum.
+
+- **T = 8:** n\* = 1. The models learned only the position-1 copy;
+  accuracy at position 2 is at chance (about 1%).
+- **T = 32:** <!-- S5-T32 -->
+
+Permutation composition is NC1-complete, and theory makes it the most
+attractive family. A ternary block of about 23k weights executes it exactly
+(`construct.py`). It is also the family where learning failed outright at
+this scale.
+
+
+---
+
+## 4. What this implies for extrapolating from parameter counts
+
+A parameter count measures storage, not logical depth. By claim A, W·b caps
+how many distinct functions a network can hold, and looping adds at most
+log2 T bits. By claim B, it puts no cap on how much computation those
+functions may need: a 133-bit ternary block solves rule-110 rollouts of any
+length, given enough passes. Extrapolating "capability per parameter" from
+untied models to looped ones will therefore over-predict what looping adds to
+memorization and under-predict what it adds to serial reach.
+
+The learned models show that the substitution is real but partial. Its size
+is set by what training finds, not by either bound: every ceiling observed
+here sat orders of magnitude below both.
+
+- **Where training found an iterative algorithm** (`mod7` scans trained at
+  T = 32), passes substituted for weight bits outright. Ternary and float
+  models converged (n\* ≈ 35). Running the ternary model for 64 passes at
+  test time took it to 61 with no new parameters.
+- **Where it did not** (rule 110), reach rose jointly with parameters,
+  compute and precision: n\* ∝ W^0.24 · (W·T)^0.18 · b^0.26 across all arms.
+  An untied model with the same compute but T× the parameters went 1.1–1.9×
+  further than the tied one.
+
+So H_compute's prescription survives in a weaker form.
+**Parameters × passes** (weight uses per token, the looped analogue of
+"active parameters") predicts serial capability better than parameters
+alone. The R² comparisons are:
+
+| fit | parameters × passes | parameters |
+|---|---|---|
+| rule 110, all arms | 0.72 | 0.69 |
+| mod7, all arms | 0.72 | 0.62 |
+| rule 110, float models only | 0.74 | 0.46 |
+
+But it is not sufficient on its own:
+
+- track it alongside parameter count and weight precision;
+- treat W·b only as the ceiling on storable information;
+- trust either predictor only once the training recipe demonstrably finds the
+  iterative algorithm.
+
+---
+
+## 5. Limitations
+
+- **Scale.** W ranges over 12k–51k, with two seeds per cell, 6,000 steps,
+  and problem sizes up to 32 (`ca110d`) or 128 (`mod7`). Every ceiling seen
+  here is far below the counting limit, so this experiment cannot observe
+  claim A's bound directly. It can only show that it is not what binds.
+- **Design changes.** The design changed twice before the main grid
+  (Amendments 1–2) and once during it (Amendment 3). Each change and its
+  reason is recorded. The reformulated rule-110 task exposes intermediate
+  cells as targets. That makes it a test of whether a looped network can
+  *execute* a long serial computation it was shown, not whether it can
+  *discover* one from end-to-end supervision alone. The original
+  formulation failed exactly at discovery (§2.6).
+- **The precision axis tests quantize-then-recover, not native low-bit
+  training,** which failed in the pilot.
+- **Permutation composition, the family theory likes best, was not learned
+  at all.**
+- **The float arm runs bf16 matmuls,** so its b is about 16, not 32.
+- **Shared GPU.** The grid ran with other agents' jobs, so wall-clock
+  timings are not comparable across jobs.
+

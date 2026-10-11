@@ -15,6 +15,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import matplotlib
+import matplotlib.ticker
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -195,6 +196,38 @@ def regression(c, rows):
     return out
 
 
+def cross_arm_fit(c, rows):
+    """log2 n* on log2 W, log2 compute (W x passes for tied, W for untied) and log2 b,
+    over every uncensored cell of every arm; plus single-predictor fits for comparison."""
+    params = {(r["task"], r["arm"], r["d"], r["T"]): r["params"] for r in rows}
+    out = {}
+    for task in ("ca110d", "mod7"):
+        X, y = [], []
+        for (tk, arm, d, b, T), v in c.items():
+            n = med(v)
+            if tk != task or n is None or n < 1 or n >= CENSOR[task] or (tk, arm, d, T) not in params:
+                continue
+            W = params[(tk, arm, d, T)]
+            C = W * T if arm == "tied" else W
+            X.append([1.0, math.log2(W), math.log2(C), math.log2(B_EFF[b])])
+            y.append(math.log2(n))
+        if len(y) < 8:
+            continue
+        X, y = np.array(X), np.array(y)
+
+        def fit(cols):
+            coef, *_ = np.linalg.lstsq(X[:, cols], y, rcond=None)
+            pred = X[:, cols] @ coef
+            return coef, 1 - ((y - pred) ** 2).sum() / ((y - y.mean()) ** 2).sum()
+
+        full, r2 = fit([0, 1, 2, 3])
+        _, r2_w = fit([0, 1, 3])
+        _, r2_c = fit([0, 2, 3])
+        out[task] = {"n": len(y), "log2_W": full[1], "log2_compute": full[2], "log2_b": full[3],
+                     "R2": r2, "R2_W_and_b_only": r2_w, "R2_compute_and_b_only": r2_c}
+    return out
+
+
 # ------------------------------------------------------------------ figures
 def ylog(ax, top):
     ax.set_yscale("log", base=2)
@@ -363,6 +396,11 @@ def fig_compute(c, rows):
                                  "parameters W")):
             ax = axes[i][j]
             ax.set_xscale("log")
+            ticks = [1e4, 3e4, 1e5, 3e5, 1e6, 3e6]
+            ax.set_xticks(ticks)
+            ax.set_xticklabels(["10k", "30k", "100k", "300k", "1M", "3M"])
+            ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+            ax.set_xlim(9e3, 2.2e6 if i == 0 else 5e5)
             ylog(ax, CENSOR[task])
             ax.set_xlabel(lab)
             ax.set_title(f"{task}", loc="left", fontsize=11)
@@ -426,8 +464,9 @@ def main():
     ver = verdicts(c, rows)
     sec = secondary(rows, c)
     reg = regression(c, rows)
+    xfit = cross_arm_fit(c, rows)
     cl = cells(rows, long=True)
-    summary = {"verdicts": ver, "regression": reg, "secondary": sec,
+    summary = {"verdicts": ver, "regression": reg, "cross_arm_fit": xfit, "secondary": sec,
                "long_runs": {str(k): v for k, v in cl.items()},
                "cells": {str(k): v for k, v in c.items()}}
     (RUNS.parent / "summary.json").write_text(json.dumps(summary, indent=1, default=float),
@@ -449,6 +488,12 @@ def main():
         for arm in ("tied", "untied_w", "untied_c"):
             if any(k[0] == task and k[1] == arm for k in c):
                 md += [table_md(c, task, arm, ds, bits), ""]
+        if task in xfit:
+            g = xfit[task]
+            md += [f"Across all arms ({g['n']} uncensored cells): log2 n* = {g['log2_W']:.2f} log2 W + "
+                   f"{g['log2_compute']:.2f} log2 (W x passes) + {g['log2_b']:.2f} log2 b + const, "
+                   f"R2 = {g['R2']:.2f} (W and b only: {g['R2_W_and_b_only']:.2f}; "
+                   f"compute and b only: {g['R2_compute_and_b_only']:.2f}).", ""]
         if task in reg:
             g = reg[task]
             md += [f"Fit log2 n* = {g['intercept']:.2f} + {g['log2_W']:.2f} log2 W + {g['log2_b']:.2f} log2 b "
