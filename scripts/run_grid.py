@@ -24,7 +24,8 @@ TS = [1, 2, 4, 8, 16, 32]
 SEQ = {"s5": 128, "mod7": 128, "ca110d": 64}
 MAIN = ("ca110d", "mod7")
 BITS = ["32", "4", "1.58"]
-CKPT_ROOT = Path(os.environ.get("LOOPCAP_CKPT", r"C:\Users\patri\Documents\Codex\loop_capacity\ckpt"))
+# set LOOPCAP_CKPT to keep large files out of synced folders
+CKPT_ROOT = Path(os.environ.get("LOOPCAP_CKPT", ROOT / "checkpoints"))
 
 
 def pid_alive(pid: int) -> bool:
