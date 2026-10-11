@@ -213,7 +213,8 @@ def xlog(ax, ts):
 
 
 def floor0(v):
-    return [x if (x is not None and x > 0) else 0.85 for x in v]
+    """Medians below 1 (no size solved by at least one seed) sit on the 0 line."""
+    return [x if (x is not None and x >= 1) else 0.85 for x in v]
 
 
 def fig_nstar_vs_T(c, task):
@@ -224,7 +225,7 @@ def fig_nstar_vs_T(c, task):
     for ax, d in zip(axes[0], ds):
         ref = [min(T + 1, top) for T in TS]
         ax.plot(TS, ref, color=INK2, lw=1, ls="-", marker=None, alpha=0.7)
-        ax.annotate("one serial step per pass", (TS[1], ref[1]), xytext=(4, 8),
+        ax.annotate("one serial step per pass", (TS[4], ref[4]), xytext=(6, -12),
                     textcoords="offset points", color=INK2, fontsize=8)
         for arm in ("tied", "untied_w", "untied_c"):
             for b in bits:
@@ -341,6 +342,40 @@ def fig_wb(c, rows):
     plt.close(fig)
 
 
+def fig_compute(c, rows):
+    """n* against parameter-passes per token (W x T), the compute of one forward pass,
+    for every arm. Collapse onto one curve would mean compute is the currency."""
+    params = {(r["task"], r["arm"], r["d"], r["T"]): r["params"] for r in rows}
+    tasks = [t for t in ("ca110d", "mod7") if any(k[0] == t for k in c)]
+    fig, axes = plt.subplots(2, len(tasks), figsize=(5.2 * len(tasks), 7.4), squeeze=False)
+    mk = {"tied": "o", "untied_w": "s", "untied_c": "^"}
+    for j, task in enumerate(tasks):
+        for (tk, arm, d, b, T), v in c.items():
+            if tk != task or arm not in mk or (tk, arm, d, T) not in params:
+                continue
+            W = params[(tk, arm, d, T)]
+            compute = W * T if arm == "tied" else W  # untied blocks are each used once
+            for i, x in enumerate((compute, W)):
+                axes[i][j].scatter([x], floor0([med(v)]), color=COL[b], marker=mk[arm],
+                                   s=60 if d == 64 else 30, edgecolor=SURF, linewidth=1.0, zorder=3,
+                                   alpha=1.0 if arm == "tied" else 0.8)
+        for i, lab in enumerate(("weight uses per token (W x passes) = compute",
+                                 "parameters W")):
+            ax = axes[i][j]
+            ax.set_xscale("log")
+            ylog(ax, CENSOR[task])
+            ax.set_xlabel(lab)
+            ax.set_title(f"{task}", loc="left", fontsize=11)
+            if j == 0:
+                ax.set_ylabel("n*")
+    handles = [plt.Line2D([], [], color=COL[b], marker="o", ls="", label=B_LABEL[b]) for b in BITS]
+    handles += [plt.Line2D([], [], color=INK2, marker=mk[a], ls="", label=ARM_LABEL[a]) for a in mk]
+    fig.legend(handles=handles, loc="lower center", ncol=3, fontsize=8.5, bbox_to_anchor=(0.5, -0.01))
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
+    fig.savefig(FIG / "nstar_vs_compute.png", dpi=160)
+    plt.close(fig)
+
+
 def fig_training(rows):
     tasks = [t for t in FAMILIES if any(r["task"] == t for r in rows)]
     fig, axes = plt.subplots(1, len(tasks), figsize=(4.6 * len(tasks), 3.4), squeeze=False)
@@ -442,6 +477,7 @@ def main():
             fig_test_time(rows, task)
             fig_heatmap(rows, task, d=64)
     fig_wb(c, rows)
+    fig_compute(c, rows)
     fig_training(rows)
     print("\n".join(md))
 

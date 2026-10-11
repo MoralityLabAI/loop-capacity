@@ -93,10 +93,10 @@ def grid(include_s5: bool = True):
     return jobs
 
 
-def extra_long(steps_mult: int):
-    """Training-limited check: 3x steps on a few TIED cells."""
+def extra_long(steps_mult: int, ts=(8, 16)):
+    """Training-limited check: 3x steps on a few TIED cells (Amendment 3: T in {8, 16})."""
     return [dict(task=task, arm="tied", d=32, T=T, bits=BITS, mult=steps_mult)
-            for task in MAIN for T in (8, 32)]
+            for task in MAIN for T in ts]
 
 
 def main():
@@ -108,6 +108,8 @@ def main():
     ap.add_argument("--seeds", nargs="+", default=["1", "2"])
     ap.add_argument("--only", default="", help="comma list of arms or tasks to keep")
     ap.add_argument("--long", type=int, default=0, help="also run the Nx-steps check")
+    ap.add_argument("--long-T", type=int, nargs="+", default=[8, 16])
+    ap.add_argument("--only-long", action="store_true", help="run only the Nx-steps check")
     ap.add_argument("--no-s5", action="store_true")
     ap.add_argument("--quant-start", type=float, default=0.5)
     ap.add_argument("--scale", choices=["tensor", "channel"], default="tensor")
@@ -122,8 +124,10 @@ def main():
     local = ROOT / "runs_local"
     local.mkdir(exist_ok=True)
     jobs = grid(not args.no_s5)
+    if args.only_long:
+        jobs = []
     if args.long:
-        jobs += extra_long(args.long)
+        jobs += extra_long(args.long, tuple(args.long_T))
     if args.only:
         keep = set(args.only.split(","))
         jobs = [j for j in jobs if j["arm"] in keep or j["task"] in keep]

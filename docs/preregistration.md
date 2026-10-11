@@ -244,3 +244,14 @@ Changes for the main grid:
    per-output-channel variant was tried on `mod7`: int4 reached n\* = 8 and
    ternary n\* = 2, against 11 and 2 with per-tensor scales. It did not rescue
    ternary, so the simpler pre-registered scheme is kept.
+
+### Amendment 3 (2026-10-11 10:30, during the main grid, before any 3× job started)
+
+Measured job times made the 3× check at T = 32 too expensive: about 4.2 h
+for `ca110d` and 4.5 h for `mod7`, at d = 32. The check therefore moves to
+TIED, d = 32, T ∈ {8, 16}, at 18,000 steps.
+
+T = 16 is where the d = 32 float `ca110d` curve starts to level off (n\* = 13
+at T = 16, 12.5 at T = 32). It still tests whether more training lifts the
+plateau. This decision was taken after seeing the TIED results (§2 of the
+note reports them as they stood then), but before any 3× result existed.

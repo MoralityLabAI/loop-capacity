@@ -1,0 +1,4114 @@
+{
+ "verdicts": {
+  "ca110d": {
+   "cells": {
+    "d32_b32.0": {
+     "n8": 11.5,
+     "n16": 13.0,
+     "n32": 12.5,
+     "grows": false,
+     "saturates": true
+    },
+    "d32_b4.0": {
+     "n8": 5.5,
+     "n16": 8.5,
+     "n32": 9.0,
+     "grows": false,
+     "saturates": false
+    },
+    "d32_b1.58": {
+     "n8": 6.0,
+     "n16": 5.5,
+     "n32": 5.5,
+     "grows": false,
+     "saturates": true
+    },
+    "d64_b32.0": {
+     "n8": 19.0,
+     "n16": 21.5,
+     "n32": 22.0,
+     "grows": false,
+     "saturates": true
+    },
+    "d64_b4.0": {
+     "n8": 13.0,
+     "n16": 14.5,
+     "n32": 16.5,
+     "grows": false,
+     "saturates": false
+    },
+    "d64_b1.58": {
+     "n8": 9.0,
+     "n16": 10.0,
+     "n32": 11.0,
+     "grows": false,
+     "saturates": false
+    }
+   },
+   "grow": 0,
+   "saturate": 3,
+   "n_cells": 6,
+   "insensitive": false,
+   "ratio_hi_lo": 4.0,
+   "spearman_logWb_n32": 0.9428571428571428,
+   "tracking": true,
+   "verdict": "mixed"
+  },
+  "mod7": {
+   "cells": {
+    "d32_b32.0": {
+     "n8": 13.5,
+     "n16": 23.0,
+     "n32": 35.5,
+     "grows": true,
+     "saturates": false
+    },
+    "d32_b4.0": {
+     "n8": 6.5,
+     "n16": 11.0,
+     "n32": 25.0,
+     "grows": true,
+     "saturates": false
+    },
+    "d32_b1.58": {
+     "n8": 3.5,
+     "n16": 4.5,
+     "n32": 4.5,
+     "grows": false,
+     "saturates": false
+    },
+    "d64_b32.0": {
+     "n8": 24.5,
+     "n16": 40.0,
+     "n32": 36.5,
+     "grows": false,
+     "saturates": false
+    },
+    "d64_b4.0": {
+     "n8": 16.5,
+     "n16": 22.5,
+     "n32": 38.0,
+     "grows": true,
+     "saturates": false
+    },
+    "d64_b1.58": {
+     "n8": 7.5,
+     "n16": 16.5,
+     "n32": 34.5,
+     "grows": true,
+     "saturates": false
+    }
+   },
+   "grow": 4,
+   "saturate": 0,
+   "n_cells": 6,
+   "insensitive": false,
+   "ratio_hi_lo": 8.11111111111111,
+   "spearman_logWb_n32": 0.8285714285714286,
+   "tracking": true,
+   "verdict": "mixed"
+  },
+  "s5": {
+   "cells": {
+    "d32_b32.0": "missing",
+    "d32_b4.0": "missing",
+    "d32_b1.58": "missing",
+    "d64_b32.0": "missing",
+    "d64_b4.0": "missing",
+    "d64_b1.58": "missing"
+   },
+   "grow": 0,
+   "saturate": 0,
+   "n_cells": 6,
+   "verdict": "incomplete"
+  }
+ },
+ "regression": {
+  "ca110d": {
+   "n": 36,
+   "intercept": -3.326797032872908,
+   "log2_W": 0.35718414433950485,
+   "log2_b": 0.26366021142415824,
+   "log2_T": 0.23540180070434732
+  },
+  "mod7": {
+   "n": 36,
+   "intercept": -7.333648758698136,
+   "log2_W": 0.548007046022818,
+   "log2_b": 0.7656412586229625,
+   "log2_T": 0.41925631181180073
+  }
+ },
+ "secondary": {
+  "test_time": [
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 1,
+    "n_T": 5,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 1,
+    "n_T": 6,
+    "n_2T": 1,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 1,
+    "n_T": 4,
+    "n_2T": 2,
+    "n_4T": 2,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 1,
+    "n_T": 4,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 1,
+    "n_T": 3,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 1,
+    "n_T": 4,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 16,
+    "n_T": 13,
+    "n_2T": 12,
+    "n_4T": 2,
+    "n_half": 11
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 16,
+    "n_T": 13,
+    "n_2T": 4,
+    "n_4T": 1,
+    "n_half": 11
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 16,
+    "n_T": 8,
+    "n_2T": 3,
+    "n_4T": 1,
+    "n_half": 7
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 16,
+    "n_T": 9,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": 8
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 16,
+    "n_T": 6,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": 6
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 16,
+    "n_T": 5,
+    "n_2T": 5,
+    "n_4T": 4,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 2,
+    "n_T": 8,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 2,
+    "n_T": 8,
+    "n_2T": 1,
+    "n_4T": 0,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 2,
+    "n_T": 5,
+    "n_2T": 3,
+    "n_4T": 1,
+    "n_half": 3
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 2,
+    "n_T": 6,
+    "n_2T": 3,
+    "n_4T": 1,
+    "n_half": 4
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 2,
+    "n_T": 4,
+    "n_2T": 3,
+    "n_4T": 1,
+    "n_half": 3
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 2,
+    "n_T": 5,
+    "n_2T": 3,
+    "n_4T": 1,
+    "n_half": 3
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 32,
+    "n_T": 12,
+    "n_2T": 11,
+    "n_4T": 3,
+    "n_half": 11
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 32,
+    "n_T": 13,
+    "n_2T": 13,
+    "n_4T": 4,
+    "n_half": 13
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 32,
+    "n_T": 9,
+    "n_2T": 9,
+    "n_4T": 1,
+    "n_half": 8
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 32,
+    "n_T": 9,
+    "n_2T": 8,
+    "n_4T": 2,
+    "n_half": 9
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 32,
+    "n_T": 6,
+    "n_2T": 6,
+    "n_4T": 5,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 32,
+    "n_T": 5,
+    "n_2T": 5,
+    "n_4T": 5,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 4,
+    "n_T": 10,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": 7
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 4,
+    "n_T": 10,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": 6
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 4,
+    "n_T": 7,
+    "n_2T": 4,
+    "n_4T": 0,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 4,
+    "n_T": 5,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 4,
+    "n_T": 6,
+    "n_2T": 5,
+    "n_4T": 2,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 4,
+    "n_T": 5,
+    "n_2T": 4,
+    "n_4T": 2,
+    "n_half": 4
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 8,
+    "n_T": 11,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": 9
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 8,
+    "n_T": 12,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": 9
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 8,
+    "n_T": 9,
+    "n_2T": 8,
+    "n_4T": 1,
+    "n_half": 7
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 8,
+    "n_T": 2,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": 7
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 8,
+    "n_T": 6,
+    "n_2T": 4,
+    "n_4T": 1,
+    "n_half": 6
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 8,
+    "n_T": 6,
+    "n_2T": 6,
+    "n_4T": 4,
+    "n_half": 6
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 1,
+    "n_T": 7,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 1,
+    "n_T": 7,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 1,
+    "n_T": 6,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 1,
+    "n_T": 6,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 1,
+    "n_T": 6,
+    "n_2T": 3,
+    "n_4T": 2,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 1,
+    "n_T": 5,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": null
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 16,
+    "n_T": 21,
+    "n_2T": 11,
+    "n_4T": 5,
+    "n_half": 17
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 16,
+    "n_T": 22,
+    "n_2T": 6,
+    "n_4T": 1,
+    "n_half": 17
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 16,
+    "n_T": 15,
+    "n_2T": 4,
+    "n_4T": 1,
+    "n_half": 12
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 16,
+    "n_T": 14,
+    "n_2T": 14,
+    "n_4T": 1,
+    "n_half": 12
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 16,
+    "n_T": 10,
+    "n_2T": 5,
+    "n_4T": 2,
+    "n_half": 10
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 16,
+    "n_T": 10,
+    "n_2T": 10,
+    "n_4T": 4,
+    "n_half": 9
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 2,
+    "n_T": 10,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": 6
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 2,
+    "n_T": 10,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": 6
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 2,
+    "n_T": 7,
+    "n_2T": 6,
+    "n_4T": 1,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 2,
+    "n_T": 7,
+    "n_2T": 6,
+    "n_4T": 1,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 2,
+    "n_T": 7,
+    "n_2T": 4,
+    "n_4T": 1,
+    "n_half": 4
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 2,
+    "n_T": 7,
+    "n_2T": 5,
+    "n_4T": 1,
+    "n_half": 5
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 32,
+    "n_T": 22,
+    "n_2T": 21,
+    "n_4T": 11,
+    "n_half": 21
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 32,
+    "n_T": 22,
+    "n_2T": 22,
+    "n_4T": 7,
+    "n_half": 21
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 32,
+    "n_T": 17,
+    "n_2T": 16,
+    "n_4T": 3,
+    "n_half": 15
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 32,
+    "n_T": 16,
+    "n_2T": 16,
+    "n_4T": 5,
+    "n_half": 14
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 32,
+    "n_T": 11,
+    "n_2T": 5,
+    "n_4T": 4,
+    "n_half": 10
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 32,
+    "n_T": 11,
+    "n_2T": 11,
+    "n_4T": 3,
+    "n_half": 10
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 4,
+    "n_T": 14,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": 9
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 4,
+    "n_T": 15,
+    "n_2T": 1,
+    "n_4T": 0,
+    "n_half": 9
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 4,
+    "n_T": 10,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": 7
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 4,
+    "n_T": 11,
+    "n_2T": 1,
+    "n_4T": 0,
+    "n_half": 7
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 4,
+    "n_T": 8,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": 6
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 4,
+    "n_T": 9,
+    "n_2T": 4,
+    "n_4T": 1,
+    "n_half": 7
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 8,
+    "n_T": 19,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": 13
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 8,
+    "n_T": 19,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": 12
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 8,
+    "n_T": 13,
+    "n_2T": 4,
+    "n_4T": 1,
+    "n_half": 10
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 8,
+    "n_T": 13,
+    "n_2T": 8,
+    "n_4T": 1,
+    "n_half": 10
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 8,
+    "n_T": 9,
+    "n_2T": 3,
+    "n_4T": 3,
+    "n_half": 8
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 8,
+    "n_T": 9,
+    "n_2T": 9,
+    "n_4T": 1,
+    "n_half": 8
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 1,
+    "n_T": 10,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 1,
+    "n_T": 11,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 1,
+    "n_T": 6,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 1,
+    "n_T": 3,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 1,
+    "n_T": 2,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 1,
+    "n_T": 3,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 16,
+    "n_T": 23,
+    "n_2T": 20,
+    "n_4T": 2,
+    "n_half": 12
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 16,
+    "n_T": 23,
+    "n_2T": 22,
+    "n_4T": 1,
+    "n_half": 12
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 16,
+    "n_T": 13,
+    "n_2T": 12,
+    "n_4T": 0,
+    "n_half": 10
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 16,
+    "n_T": 9,
+    "n_2T": 9,
+    "n_4T": 8,
+    "n_half": 9
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 16,
+    "n_T": 2,
+    "n_2T": 2,
+    "n_4T": 0,
+    "n_half": 2
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 16,
+    "n_T": 7,
+    "n_2T": 7,
+    "n_4T": 6,
+    "n_half": 7
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 2,
+    "n_T": 11,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": 9
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 2,
+    "n_T": 31,
+    "n_2T": 1,
+    "n_4T": 0,
+    "n_half": 15
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 2,
+    "n_T": 3,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": 3
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 2,
+    "n_T": 2,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": 2
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 2,
+    "n_T": 2,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": 2
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 2,
+    "n_T": 2,
+    "n_2T": 2,
+    "n_4T": 0,
+    "n_half": 2
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 32,
+    "n_T": 35,
+    "n_2T": 34,
+    "n_4T": 29,
+    "n_half": 18
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 32,
+    "n_T": 36,
+    "n_2T": 66,
+    "n_4T": 62,
+    "n_half": 17
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 32,
+    "n_T": 15,
+    "n_2T": 15,
+    "n_4T": 1,
+    "n_half": 15
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 32,
+    "n_T": 35,
+    "n_2T": 70,
+    "n_4T": 75,
+    "n_half": 17
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 32,
+    "n_T": 3,
+    "n_2T": 2,
+    "n_4T": 0,
+    "n_half": 4
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 32,
+    "n_T": 6,
+    "n_2T": 6,
+    "n_4T": 4,
+    "n_half": 7
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 4,
+    "n_T": 42,
+    "n_2T": 22,
+    "n_4T": 1,
+    "n_half": 12
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 4,
+    "n_T": 34,
+    "n_2T": 22,
+    "n_4T": 12,
+    "n_half": 13
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 4,
+    "n_T": 2,
+    "n_2T": 2,
+    "n_4T": 2,
+    "n_half": 2
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 4,
+    "n_T": 3,
+    "n_2T": 2,
+    "n_4T": 2,
+    "n_half": 3
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 4,
+    "n_T": 1,
+    "n_2T": 1,
+    "n_4T": 1,
+    "n_half": 1
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 4,
+    "n_T": 4,
+    "n_2T": 2,
+    "n_4T": 0,
+    "n_half": 2
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 8,
+    "n_T": 14,
+    "n_2T": 12,
+    "n_4T": 1,
+    "n_half": 8
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 8,
+    "n_T": 13,
+    "n_2T": 11,
+    "n_4T": 1,
+    "n_half": 7
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 8,
+    "n_T": 6,
+    "n_2T": 5,
+    "n_4T": 3,
+    "n_half": 5
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 8,
+    "n_T": 7,
+    "n_2T": 6,
+    "n_4T": 0,
+    "n_half": 6
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 8,
+    "n_T": 3,
+    "n_2T": 2,
+    "n_4T": 1,
+    "n_half": 3
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 8,
+    "n_T": 4,
+    "n_2T": 3,
+    "n_4T": 0,
+    "n_half": 4
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 1,
+    "n_T": 41,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 1,
+    "n_T": 41,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 1,
+    "n_T": 3,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 1,
+    "n_T": 5,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 1,
+    "n_T": 1,
+    "n_2T": 1,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 1,
+    "n_T": 0,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": null
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 16,
+    "n_T": 40,
+    "n_2T": 46,
+    "n_4T": 45,
+    "n_half": 19
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 16,
+    "n_T": 40,
+    "n_2T": 44,
+    "n_4T": 43,
+    "n_half": 17
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 16,
+    "n_T": 17,
+    "n_2T": 17,
+    "n_4T": 16,
+    "n_half": 13
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 16,
+    "n_T": 28,
+    "n_2T": 29,
+    "n_4T": 26,
+    "n_half": 14
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 16,
+    "n_T": 20,
+    "n_2T": 23,
+    "n_4T": 23,
+    "n_half": 10
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 16,
+    "n_T": 13,
+    "n_2T": 13,
+    "n_4T": 13,
+    "n_half": 11
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 2,
+    "n_T": 46,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": 26
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 2,
+    "n_T": 26,
+    "n_2T": 21,
+    "n_4T": 0,
+    "n_half": 22
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 2,
+    "n_T": 16,
+    "n_2T": 10,
+    "n_4T": 1,
+    "n_half": 10
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 2,
+    "n_T": 5,
+    "n_2T": 5,
+    "n_4T": 1,
+    "n_half": 5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 2,
+    "n_T": 9,
+    "n_2T": 2,
+    "n_4T": 0,
+    "n_half": 1
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 2,
+    "n_T": 7,
+    "n_2T": 0,
+    "n_4T": 0,
+    "n_half": 5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 32,
+    "n_T": 37,
+    "n_2T": 51,
+    "n_4T": 51,
+    "n_half": 18
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 32,
+    "n_T": 36,
+    "n_2T": 47,
+    "n_4T": 47,
+    "n_half": 17
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 32,
+    "n_T": 35,
+    "n_2T": 52,
+    "n_4T": 52,
+    "n_half": 17
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 32,
+    "n_T": 41,
+    "n_2T": 47,
+    "n_4T": 46,
+    "n_half": 20
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 32,
+    "n_T": 34,
+    "n_2T": 65,
+    "n_4T": 63,
+    "n_half": 17
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 32,
+    "n_T": 35,
+    "n_2T": 57,
+    "n_4T": 57,
+    "n_half": 17
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 4,
+    "n_T": 64,
+    "n_2T": 54,
+    "n_4T": 47,
+    "n_half": 17
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 4,
+    "n_T": 23,
+    "n_2T": 22,
+    "n_4T": 18,
+    "n_half": 7
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 4,
+    "n_T": 10,
+    "n_2T": 10,
+    "n_4T": 9,
+    "n_half": 5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 4,
+    "n_T": 20,
+    "n_2T": 14,
+    "n_4T": 9,
+    "n_half": 10
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 4,
+    "n_T": 12,
+    "n_2T": 10,
+    "n_4T": 2,
+    "n_half": 4
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 4,
+    "n_T": 5,
+    "n_2T": 4,
+    "n_4T": 3,
+    "n_half": 4
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 8,
+    "n_T": 25,
+    "n_2T": 28,
+    "n_4T": 25,
+    "n_half": 11
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 8,
+    "n_T": 24,
+    "n_2T": 25,
+    "n_4T": 23,
+    "n_half": 11
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 8,
+    "n_T": 16,
+    "n_2T": 16,
+    "n_4T": 16,
+    "n_half": 9
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 8,
+    "n_T": 17,
+    "n_2T": 17,
+    "n_4T": 17,
+    "n_half": 9
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 8,
+    "n_T": 8,
+    "n_2T": 7,
+    "n_4T": 6,
+    "n_half": 7
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 8,
+    "n_T": 7,
+    "n_2T": 7,
+    "n_4T": 6,
+    "n_half": 6
+   }
+  ],
+  "tied_vs_untied_w": [
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "T": 16,
+    "untied": 7.0,
+    "tied": 13.0
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "T": 16,
+    "untied": 5.5,
+    "tied": 8.5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "T": 16,
+    "untied": 3.0,
+    "tied": 5.5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "T": 2,
+    "untied": 7.5,
+    "tied": 8.0
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "T": 2,
+    "untied": 5.0,
+    "tied": 5.5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "T": 2,
+    "untied": 4.5,
+    "tied": 4.5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "T": 32,
+    "untied": 7.0,
+    "tied": 12.5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "T": 32,
+    "untied": 5.5,
+    "tied": 9.0
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "T": 32,
+    "untied": 2.5,
+    "tied": 5.5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "T": 4,
+    "untied": 9.5,
+    "tied": 10.0
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "T": 4,
+    "untied": 6.5,
+    "tied": 6.0
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "T": 4,
+    "untied": 4.0,
+    "tied": 5.5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "T": 8,
+    "untied": 7.5,
+    "tied": 11.5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "T": 8,
+    "untied": 5.0,
+    "tied": 5.5
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "T": 8,
+    "untied": 3.0,
+    "tied": 6.0
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "T": 16,
+    "untied": 12.0,
+    "tied": 21.5
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "T": 16,
+    "untied": 11.0,
+    "tied": 14.5
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "T": 16,
+    "untied": 6.0,
+    "tied": 10.0
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "T": 2,
+    "untied": 9.5,
+    "tied": 10.0
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "T": 2,
+    "untied": 7.0,
+    "tied": 7.0
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "T": 2,
+    "untied": 7.0,
+    "tied": 7.0
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "T": 32,
+    "untied": 8.0,
+    "tied": 22.0
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "T": 32,
+    "untied": 6.5,
+    "tied": 16.5
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "T": 32,
+    "untied": 3.5,
+    "tied": 11.0
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "T": 4,
+    "untied": 12.5,
+    "tied": 14.5
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "T": 4,
+    "untied": 9.0,
+    "tied": 10.5
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "T": 4,
+    "untied": 8.5,
+    "tied": 8.5
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "T": 8,
+    "untied": 13.5,
+    "tied": 19.0
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "T": 8,
+    "untied": 11.0,
+    "tied": 13.0
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "T": 8,
+    "untied": 8.0,
+    "tied": 9.0
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "T": 16,
+    "untied": 3.0,
+    "tied": 23.0
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "T": 16,
+    "untied": 2.5,
+    "tied": 11.0
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "T": 16,
+    "untied": 1.0,
+    "tied": 4.5
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "T": 2,
+    "untied": 20.5,
+    "tied": 21.0
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "T": 2,
+    "untied": 3.0,
+    "tied": 2.5
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "T": 2,
+    "untied": 2.5,
+    "tied": 2.0
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "T": 4,
+    "untied": 16.5,
+    "tied": 38.0
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "T": 4,
+    "untied": 2.0,
+    "tied": 2.5
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "T": 4,
+    "untied": 1.0,
+    "tied": 2.5
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "T": 8,
+    "untied": 3.0,
+    "tied": 13.5
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "T": 8,
+    "untied": 2.0,
+    "tied": 6.5
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "T": 8,
+    "untied": 1.5,
+    "tied": 3.5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "T": 16,
+    "untied": 13.0,
+    "tied": 40.0
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "T": 16,
+    "untied": 8.5,
+    "tied": 22.5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "T": 16,
+    "untied": 3.5,
+    "tied": 16.5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "T": 2,
+    "untied": 37.5,
+    "tied": 36.0
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "T": 2,
+    "untied": 7.5,
+    "tied": 10.5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "T": 2,
+    "untied": 6.5,
+    "tied": 8.0
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "T": 4,
+    "untied": 31.0,
+    "tied": 43.5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "T": 4,
+    "untied": 13.5,
+    "tied": 15.0
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "T": 4,
+    "untied": 11.5,
+    "tied": 8.5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "T": 8,
+    "untied": 30.5,
+    "tied": 24.5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "T": 8,
+    "untied": 14.5,
+    "tied": 16.5
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "T": 8,
+    "untied": 4.0,
+    "tied": 7.5
+   }
+  ],
+  "tied_vs_untied_c": [],
+  "training_limited": [
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 5,
+    "n_final": 5,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 6,
+    "n_final": 6,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 4,
+    "n_final": 4,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 4,
+    "n_final": 4,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 3,
+    "n_final": 3,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 4,
+    "n_final": 4,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 12,
+    "n_final": 13,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 13,
+    "n_final": 13,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 7,
+    "n_final": 8,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 9,
+    "n_final": 9,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 6,
+    "n_final": 6,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 5,
+    "n_final": 5,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 8,
+    "n_final": 8,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 8,
+    "n_final": 8,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 2,
+    "n_final": 5,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 5,
+    "n_final": 6,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 4,
+    "n_final": 4,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 4,
+    "n_final": 5,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 11,
+    "n_final": 12,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 13,
+    "n_final": 13,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 9,
+    "n_final": 9,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 9,
+    "n_final": 9,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 5,
+    "n_final": 6,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 5,
+    "n_final": 5,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 10,
+    "n_final": 10,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 10,
+    "n_final": 10,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 7,
+    "n_final": 7,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 7,
+    "n_final": 5,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 5,
+    "n_final": 6,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 4,
+    "n_final": 5,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 11,
+    "n_final": 11,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 12,
+    "n_final": 12,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 9,
+    "n_final": 9,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 9,
+    "n_final": 2,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 6,
+    "n_final": 6,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 6,
+    "n_final": 6,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 7,
+    "n_final": 7,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 7,
+    "n_final": 7,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 5,
+    "n_final": 6,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 6,
+    "n_final": 6,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 6,
+    "n_final": 6,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 5,
+    "n_final": 5,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 20,
+    "n_final": 21,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 21,
+    "n_final": 22,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 14,
+    "n_final": 15,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 15,
+    "n_final": 14,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 10,
+    "n_final": 10,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 9,
+    "n_final": 10,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 10,
+    "n_final": 10,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 10,
+    "n_final": 10,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 7,
+    "n_final": 7,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 6,
+    "n_final": 7,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 7,
+    "n_final": 7,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 7,
+    "n_final": 7,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 22,
+    "n_final": 22,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 22,
+    "n_final": 22,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 16,
+    "n_final": 17,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 16,
+    "n_final": 16,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 10,
+    "n_final": 11,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 10,
+    "n_final": 11,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 14,
+    "n_final": 14,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 15,
+    "n_final": 15,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 10,
+    "n_final": 10,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 10,
+    "n_final": 11,
+    "flag": true
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 8,
+    "n_final": 8,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 9,
+    "n_final": 9,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 18,
+    "n_final": 19,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 19,
+    "n_final": 19,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 12,
+    "n_final": 13,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 13,
+    "n_final": 13,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 9,
+    "n_final": 9,
+    "flag": false
+   },
+   {
+    "task": "ca110d",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 9,
+    "n_final": 10,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 10,
+    "n_final": 11,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 10,
+    "n_final": 11,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 7,
+    "n_final": 6,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 2,
+    "n_final": 3,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 2,
+    "n_final": 2,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 2,
+    "n_final": 3,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 20,
+    "n_final": 23,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 23,
+    "n_final": 23,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 13,
+    "n_final": 13,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 11,
+    "n_final": 9,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 2,
+    "n_final": 2,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 0,
+    "n_final": 7,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 10,
+    "n_final": 11,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 26,
+    "n_final": 27,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 3,
+    "n_final": 3,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 1,
+    "n_final": 2,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 1,
+    "n_final": 2,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 1,
+    "n_final": 2,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 34,
+    "n_final": 35,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 36,
+    "n_final": 36,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 10,
+    "n_final": 15,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 34,
+    "n_final": 35,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 0,
+    "n_final": 3,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 7,
+    "n_final": 6,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 30,
+    "n_final": 42,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 32,
+    "n_final": 32,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 4,
+    "n_final": 2,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 1,
+    "n_final": 3,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 2,
+    "n_final": 1,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 1,
+    "n_final": 4,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 14,
+    "n_final": 14,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 14,
+    "n_final": 14,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 5,
+    "n_final": 5,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 6,
+    "n_final": 7,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 0,
+    "n_final": 3,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 32,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 4,
+    "n_final": 4,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 29,
+    "n_final": 42,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 33,
+    "n_final": 36,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 3,
+    "n_final": 3,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 4,
+    "n_final": 5,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 1,
+    "n_at_80pct": 2,
+    "n_final": 1,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 1,
+    "n_at_80pct": 3,
+    "n_final": 0,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 35,
+    "n_final": 39,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 36,
+    "n_final": 39,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 27,
+    "n_final": 17,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 27,
+    "n_final": 29,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 16,
+    "n_at_80pct": 17,
+    "n_final": 19,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 16,
+    "n_at_80pct": 5,
+    "n_final": 13,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 43,
+    "n_final": 46,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 25,
+    "n_final": 25,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 13,
+    "n_final": 16,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 2,
+    "n_final": 5,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 2,
+    "n_at_80pct": 3,
+    "n_final": 9,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 2,
+    "n_at_80pct": 8,
+    "n_final": 7,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 25,
+    "n_final": 37,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 35,
+    "n_final": 36,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 34,
+    "n_final": 35,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 38,
+    "n_final": 41,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 32,
+    "n_at_80pct": 34,
+    "n_final": 34,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 32,
+    "n_at_80pct": 34,
+    "n_final": 35,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 61,
+    "n_final": 67,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 15,
+    "n_final": 23,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 10,
+    "n_final": 9,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 17,
+    "n_final": 20,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 4,
+    "n_at_80pct": 4,
+    "n_final": 14,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 4,
+    "n_at_80pct": 5,
+    "n_final": 5,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 24,
+    "n_final": 25,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 32.0,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 22,
+    "n_final": 23,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 16,
+    "n_final": 16,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 4.0,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 17,
+    "n_final": 17,
+    "flag": false
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 1,
+    "T": 8,
+    "n_at_80pct": 7,
+    "n_final": 8,
+    "flag": true
+   },
+   {
+    "task": "mod7",
+    "d": 64,
+    "bits": 1.58,
+    "seed": 2,
+    "T": 8,
+    "n_at_80pct": 6,
+    "n_final": 7,
+    "flag": true
+   }
+  ]
+ },
+ "long_runs": {},
+ "cells": {
+  "('ca110d', 'tied', 32, 32.0, 1)": [
+   5,
+   6
+  ],
+  "('ca110d', 'tied', 32, 4.0, 1)": [
+   4,
+   4
+  ],
+  "('ca110d', 'tied', 32, 1.58, 1)": [
+   3,
+   4
+  ],
+  "('ca110d', 'tied', 32, 32.0, 16)": [
+   13,
+   13
+  ],
+  "('ca110d', 'tied', 32, 4.0, 16)": [
+   8,
+   9
+  ],
+  "('ca110d', 'tied', 32, 1.58, 16)": [
+   6,
+   5
+  ],
+  "('ca110d', 'tied', 32, 32.0, 2)": [
+   8,
+   8
+  ],
+  "('ca110d', 'tied', 32, 4.0, 2)": [
+   5,
+   6
+  ],
+  "('ca110d', 'tied', 32, 1.58, 2)": [
+   4,
+   5
+  ],
+  "('ca110d', 'tied', 32, 32.0, 32)": [
+   12,
+   13
+  ],
+  "('ca110d', 'tied', 32, 4.0, 32)": [
+   9,
+   9
+  ],
+  "('ca110d', 'tied', 32, 1.58, 32)": [
+   6,
+   5
+  ],
+  "('ca110d', 'tied', 32, 32.0, 4)": [
+   10,
+   10
+  ],
+  "('ca110d', 'tied', 32, 4.0, 4)": [
+   7,
+   5
+  ],
+  "('ca110d', 'tied', 32, 1.58, 4)": [
+   6,
+   5
+  ],
+  "('ca110d', 'tied', 32, 32.0, 8)": [
+   11,
+   12
+  ],
+  "('ca110d', 'tied', 32, 4.0, 8)": [
+   9,
+   2
+  ],
+  "('ca110d', 'tied', 32, 1.58, 8)": [
+   6,
+   6
+  ],
+  "('ca110d', 'tied', 64, 32.0, 1)": [
+   7,
+   7
+  ],
+  "('ca110d', 'tied', 64, 4.0, 1)": [
+   6,
+   6
+  ],
+  "('ca110d', 'tied', 64, 1.58, 1)": [
+   6,
+   5
+  ],
+  "('ca110d', 'tied', 64, 32.0, 16)": [
+   21,
+   22
+  ],
+  "('ca110d', 'tied', 64, 4.0, 16)": [
+   15,
+   14
+  ],
+  "('ca110d', 'tied', 64, 1.58, 16)": [
+   10,
+   10
+  ],
+  "('ca110d', 'tied', 64, 32.0, 2)": [
+   10,
+   10
+  ],
+  "('ca110d', 'tied', 64, 4.0, 2)": [
+   7,
+   7
+  ],
+  "('ca110d', 'tied', 64, 1.58, 2)": [
+   7,
+   7
+  ],
+  "('ca110d', 'tied', 64, 32.0, 32)": [
+   22,
+   22
+  ],
+  "('ca110d', 'tied', 64, 4.0, 32)": [
+   17,
+   16
+  ],
+  "('ca110d', 'tied', 64, 1.58, 32)": [
+   11,
+   11
+  ],
+  "('ca110d', 'tied', 64, 32.0, 4)": [
+   14,
+   15
+  ],
+  "('ca110d', 'tied', 64, 4.0, 4)": [
+   10,
+   11
+  ],
+  "('ca110d', 'tied', 64, 1.58, 4)": [
+   8,
+   9
+  ],
+  "('ca110d', 'tied', 64, 32.0, 8)": [
+   19,
+   19
+  ],
+  "('ca110d', 'tied', 64, 4.0, 8)": [
+   13,
+   13
+  ],
+  "('ca110d', 'tied', 64, 1.58, 8)": [
+   9,
+   9
+  ],
+  "('ca110d', 'untied_w', 32, 32.0, 16)": [
+   7,
+   7
+  ],
+  "('ca110d', 'untied_w', 32, 4.0, 16)": [
+   6,
+   5
+  ],
+  "('ca110d', 'untied_w', 32, 1.58, 16)": [
+   3,
+   3
+  ],
+  "('ca110d', 'untied_w', 32, 32.0, 2)": [
+   7,
+   8
+  ],
+  "('ca110d', 'untied_w', 32, 4.0, 2)": [
+   5,
+   5
+  ],
+  "('ca110d', 'untied_w', 32, 1.58, 2)": [
+   4,
+   5
+  ],
+  "('ca110d', 'untied_w', 32, 32.0, 32)": [
+   7,
+   7
+  ],
+  "('ca110d', 'untied_w', 32, 4.0, 32)": [
+   6,
+   5
+  ],
+  "('ca110d', 'untied_w', 32, 1.58, 32)": [
+   3,
+   2
+  ],
+  "('ca110d', 'untied_w', 32, 32.0, 4)": [
+   9,
+   10
+  ],
+  "('ca110d', 'untied_w', 32, 4.0, 4)": [
+   5,
+   8
+  ],
+  "('ca110d', 'untied_w', 32, 1.58, 4)": [
+   4,
+   4
+  ],
+  "('ca110d', 'untied_w', 32, 32.0, 8)": [
+   7,
+   8
+  ],
+  "('ca110d', 'untied_w', 32, 4.0, 8)": [
+   5,
+   5
+  ],
+  "('ca110d', 'untied_w', 32, 1.58, 8)": [
+   3,
+   3
+  ],
+  "('ca110d', 'untied_w', 64, 32.0, 16)": [
+   12,
+   12
+  ],
+  "('ca110d', 'untied_w', 64, 4.0, 16)": [
+   11,
+   11
+  ],
+  "('ca110d', 'untied_w', 64, 1.58, 16)": [
+   6,
+   6
+  ],
+  "('ca110d', 'untied_w', 64, 32.0, 2)": [
+   9,
+   10
+  ],
+  "('ca110d', 'untied_w', 64, 4.0, 2)": [
+   7,
+   7
+  ],
+  "('ca110d', 'untied_w', 64, 1.58, 2)": [
+   7,
+   7
+  ],
+  "('ca110d', 'untied_w', 64, 32.0, 32)": [
+   8,
+   8
+  ],
+  "('ca110d', 'untied_w', 64, 4.0, 32)": [
+   7,
+   6
+  ],
+  "('ca110d', 'untied_w', 64, 1.58, 32)": [
+   4,
+   3
+  ],
+  "('ca110d', 'untied_w', 64, 32.0, 4)": [
+   12,
+   13
+  ],
+  "('ca110d', 'untied_w', 64, 4.0, 4)": [
+   10,
+   8
+  ],
+  "('ca110d', 'untied_w', 64, 1.58, 4)": [
+   8,
+   9
+  ],
+  "('ca110d', 'untied_w', 64, 32.0, 8)": [
+   13,
+   14
+  ],
+  "('ca110d', 'untied_w', 64, 4.0, 8)": [
+   11,
+   11
+  ],
+  "('ca110d', 'untied_w', 64, 1.58, 8)": [
+   8,
+   8
+  ],
+  "('mod7', 'tied', 32, 32.0, 1)": [
+   10,
+   11
+  ],
+  "('mod7', 'tied', 32, 4.0, 1)": [
+   6,
+   3
+  ],
+  "('mod7', 'tied', 32, 1.58, 1)": [
+   2,
+   3
+  ],
+  "('mod7', 'tied', 32, 32.0, 16)": [
+   23,
+   23
+  ],
+  "('mod7', 'tied', 32, 4.0, 16)": [
+   13,
+   9
+  ],
+  "('mod7', 'tied', 32, 1.58, 16)": [
+   2,
+   7
+  ],
+  "('mod7', 'tied', 32, 32.0, 2)": [
+   11,
+   31
+  ],
+  "('mod7', 'tied', 32, 4.0, 2)": [
+   3,
+   2
+  ],
+  "('mod7', 'tied', 32, 1.58, 2)": [
+   2,
+   2
+  ],
+  "('mod7', 'tied', 32, 32.0, 32)": [
+   35,
+   36
+  ],
+  "('mod7', 'tied', 32, 4.0, 32)": [
+   15,
+   35
+  ],
+  "('mod7', 'tied', 32, 1.58, 32)": [
+   3,
+   6
+  ],
+  "('mod7', 'tied', 32, 32.0, 4)": [
+   42,
+   34
+  ],
+  "('mod7', 'tied', 32, 4.0, 4)": [
+   2,
+   3
+  ],
+  "('mod7', 'tied', 32, 1.58, 4)": [
+   1,
+   4
+  ],
+  "('mod7', 'tied', 32, 32.0, 8)": [
+   14,
+   13
+  ],
+  "('mod7', 'tied', 32, 4.0, 8)": [
+   6,
+   7
+  ],
+  "('mod7', 'tied', 32, 1.58, 8)": [
+   3,
+   4
+  ],
+  "('mod7', 'tied', 64, 32.0, 1)": [
+   41,
+   41
+  ],
+  "('mod7', 'tied', 64, 4.0, 1)": [
+   3,
+   5
+  ],
+  "('mod7', 'tied', 64, 1.58, 1)": [
+   1,
+   0
+  ],
+  "('mod7', 'tied', 64, 32.0, 16)": [
+   40,
+   40
+  ],
+  "('mod7', 'tied', 64, 4.0, 16)": [
+   17,
+   28
+  ],
+  "('mod7', 'tied', 64, 1.58, 16)": [
+   20,
+   13
+  ],
+  "('mod7', 'tied', 64, 32.0, 2)": [
+   46,
+   26
+  ],
+  "('mod7', 'tied', 64, 4.0, 2)": [
+   16,
+   5
+  ],
+  "('mod7', 'tied', 64, 1.58, 2)": [
+   9,
+   7
+  ],
+  "('mod7', 'tied', 64, 32.0, 32)": [
+   37,
+   36
+  ],
+  "('mod7', 'tied', 64, 4.0, 32)": [
+   35,
+   41
+  ],
+  "('mod7', 'tied', 64, 1.58, 32)": [
+   34,
+   35
+  ],
+  "('mod7', 'tied', 64, 32.0, 4)": [
+   64,
+   23
+  ],
+  "('mod7', 'tied', 64, 4.0, 4)": [
+   10,
+   20
+  ],
+  "('mod7', 'tied', 64, 1.58, 4)": [
+   12,
+   5
+  ],
+  "('mod7', 'tied', 64, 32.0, 8)": [
+   25,
+   24
+  ],
+  "('mod7', 'tied', 64, 4.0, 8)": [
+   16,
+   17
+  ],
+  "('mod7', 'tied', 64, 1.58, 8)": [
+   8,
+   7
+  ],
+  "('mod7', 'untied_w', 32, 32.0, 16)": [
+   3,
+   3
+  ],
+  "('mod7', 'untied_w', 32, 4.0, 16)": [
+   3,
+   2
+  ],
+  "('mod7', 'untied_w', 32, 1.58, 16)": [
+   1,
+   1
+  ],
+  "('mod7', 'untied_w', 32, 32.0, 2)": [
+   32,
+   9
+  ],
+  "('mod7', 'untied_w', 32, 4.0, 2)": [
+   3,
+   3
+  ],
+  "('mod7', 'untied_w', 32, 1.58, 2)": [
+   3,
+   2
+  ],
+  "('mod7', 'untied_w', 32, 32.0, 4)": [
+   24,
+   9
+  ],
+  "('mod7', 'untied_w', 32, 4.0, 4)": [
+   1,
+   3
+  ],
+  "('mod7', 'untied_w', 32, 1.58, 4)": [
+   1,
+   1
+  ],
+  "('mod7', 'untied_w', 32, 32.0, 8)": [
+   3,
+   3
+  ],
+  "('mod7', 'untied_w', 32, 4.0, 8)": [
+   2,
+   2
+  ],
+  "('mod7', 'untied_w', 32, 1.58, 8)": [
+   2,
+   1
+  ],
+  "('mod7', 'untied_w', 64, 32.0, 16)": [
+   11,
+   15
+  ],
+  "('mod7', 'untied_w', 64, 4.0, 16)": [
+   8,
+   9
+  ],
+  "('mod7', 'untied_w', 64, 1.58, 16)": [
+   4,
+   3
+  ],
+  "('mod7', 'untied_w', 64, 32.0, 2)": [
+   22,
+   53
+  ],
+  "('mod7', 'untied_w', 64, 4.0, 2)": [
+   8,
+   7
+  ],
+  "('mod7', 'untied_w', 64, 1.58, 2)": [
+   8,
+   5
+  ],
+  "('mod7', 'untied_w', 64, 32.0, 4)": [
+   14,
+   48
+  ],
+  "('mod7', 'untied_w', 64, 4.0, 4)": [
+   6,
+   21
+  ],
+  "('mod7', 'untied_w', 64, 1.58, 4)": [
+   6,
+   17
+  ],
+  "('mod7', 'untied_w', 64, 32.0, 8)": [
+   13,
+   48
+  ],
+  "('mod7', 'untied_w', 64, 4.0, 8)": [
+   12,
+   17
+  ],
+  "('mod7', 'untied_w', 64, 1.58, 8)": [
+   5,
+   3
+  ]
+ }
+}
