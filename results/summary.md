@@ -94,13 +94,14 @@ Training-limited flags (n* rose >= 10% in the last 20% of steps): 31/72 tied mod
 
 | tied | d | b | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
 |---|---|---|---|---|---|---|---|---|
-| | 64 | float (bf16) | – | – | – | 1 (1/1) | – | – |
+| | 64 | float (bf16) | – | – | – | 1 (1/1) | – | 1 (1/1) |
 
 Test-time passes (tied, median over seeds and bit-widths): n*(2T)/n*(T) by training T:
 
 - T=8: 1.00 (n=T: 1, 2T: 1, 4T: 1)
+- T=32: 1.00 (n=T: 1, 2T: 1, 4T: 1)
 
-Training-limited flags (n* rose >= 10% in the last 20% of steps): 0/2 tied models.
+Training-limited flags (n* rose >= 10% in the last 20% of steps): 0/4 tied models.
 
 ## 3x-steps check
 
@@ -110,3 +111,9 @@ Training-limited flags (n* rose >= 10% in the last 20% of steps): 0/2 tied model
 - ('ca110d', 'tied', 32, 32.0, 8): 3x steps n* = [15, 15], base n* = [11, 12]
 - ('ca110d', 'tied', 32, 4.0, 8): 3x steps n* = [8, 9], base n* = [9, 2]
 - ('ca110d', 'tied', 32, 1.58, 8): 3x steps n* = [6, 6], base n* = [6, 6]
+- ('mod7', 'tied', 32, 32.0, 16): 3x steps n* = [40, 39], base n* = [23, 23]
+- ('mod7', 'tied', 32, 4.0, 16): 3x steps n* = [14, 15], base n* = [13, 9]
+- ('mod7', 'tied', 32, 1.58, 16): 3x steps n* = [3, 0], base n* = [2, 7]
+- ('mod7', 'tied', 32, 32.0, 8): 3x steps n* = [31, 23], base n* = [14, 13]
+- ('mod7', 'tied', 32, 4.0, 8): 3x steps n* = [17, 6], base n* = [6, 7]
+- ('mod7', 'tied', 32, 1.58, 8): 3x steps n* = [2, 1], base n* = [3, 4]

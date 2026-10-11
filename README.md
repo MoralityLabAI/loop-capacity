@@ -15,6 +15,28 @@ its weight bits W·b?
   (`test_time_*.png`), per-position accuracy (`heatmap_*.png`), n\* against
   W·b, and training curves.
 
+## Results at a glance
+
+- **Theory.** Weight bits cap *how many* functions a network can hold, and
+  looping adds at most log2 T bits. They do not cap *how much computation* a
+  held function may need. Hand-built ternary tied blocks solve rule 110 (84
+  weights) and S5 composition at any size, given enough passes
+  (`tests/test_construct.py`).
+- **Pre-registered verdict: mixed for both families.** On rule 110, learned
+  reach grows with passes and then plateaus at heights ordered by W·b.
+  Those plateaus sit two or more orders of magnitude below what the bits
+  could represent, and 3× training lifts them, so they are learning ceilings.
+- **Running sum mod 7.** Quantized models trained at T = 32 learn a scan
+  whose reach keeps growing with test-time passes. A ternary model goes from
+  n\* = 34.5 at 32 passes to 61 at 64.
+- **Tied vs untied.**
+  - Tied beats untied at equal parameters once T ≥ 8.
+  - It loses to untied at equal compute: 12.5 vs 23.5 at T = 32.
+  - Across arms, n\* ∝ W^0.24 · (W·T)^0.18 · b^0.26 on rule 110.
+- **Permutation composition (S5)** was not learned at all at this scale.
+
+See `docs/note.md` §3–4.
+
 ## Layout
 
 | path | what |

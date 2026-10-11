@@ -23,10 +23,11 @@
 verdict is *mixed* for both families.
 
 - **Rule-110 rollout (`ca110d`).** Reach grows with passes, then levels off.
-  The plateau heights are ordered by W·b, but they sit two to three orders of
+  The plateau heights are ordered by W·b, but they sit two or more orders of
   magnitude below what the bits could represent. They behave like learning
-  ceilings: 3× training steps lift them by about 30%, and the precision gap
-  opens at the moment of quantization.
+  ceilings: 3× training steps lift float reach by about 30% (and roughly
+  double it on `mod7`), and the precision gap opens at the moment of
+  quantization.
 - **Running sum mod 7 (`mod7`).** Quantized models trained at T = 32 learned
   a sequential scan. At d = 64, ternary and float converge to the same reach
   (n\* ≈ 35). Running the same weights for 64 passes at test time extends a
@@ -97,9 +98,10 @@ every one, capability per parameter is at most b:
 - **A1 (shattering).** If ⋃_{T≤T_max} F_T shatters N points, then
   2^N ≤ T_max·2^{Wb}. So VC-dim ≤ Wb + log2 T_max, which is at most
   b + (log2 T_max)/W per parameter.
-  - For real-valued ReLU weights, VC dimension does grow with depth:
-    Θ(WL log W) for depth L (Bartlett, Harvey, Liaw & Mehrabian, JMLR 2019).
-    Bounded bits are what cap it.
+  - For real-valued ReLU weights, VC dimension does grow with depth. It is
+    O(WL log W) at depth L, with matching examples of order WL log(W/L)
+    (Bartlett, Harvey, Liaw & Mehrabian, JMLR 2019). Bounded bits are what
+    cap it.
   - Vardi, Yehudai & Shamir (ICLR 2022, Thm 6.1) give O(WB + W log W) for
     B-bit weights. They also show the matching construction: roughly N/B
     parameters at bit complexity Õ(B) memorize N points, for B ≤ √N.
@@ -158,25 +160,28 @@ The block has O(s²a³) = poly(ℓ) weights of log2 3 bits each, independent of 
 n and S.
 
 *Proof.* The head moves at most one cell per step. So the next symbol at cell
-i is a function of the current symbols at cells i−1, i and i+1. There are four
-cases:
+i is a function of the current symbols at cells i−1, i and i+1. Write the
+update as new = old + Δ. There are four cases:
 
-- the head is at i;
-- the head enters i from the left;
-- the head enters i from the right;
-- none of these, and the cell is copied.
+- **The head is at i.** The cell holds (q, σ), and δ(q, σ) = (q′, σ′, m).
+  One unit detects (q, σ). It contributes −e_(q,σ) plus either e_σ′ (if the
+  head moves) or e_(q′,σ′) (if it stays).
+- **The head enters from the left.** Cell i−1 holds (q, σ) with m = R, and
+  cell i holds τ. One unit computes the AND of the two indicators. It
+  contributes −e_τ + e_(q′,τ).
+- **The head enters from the right.** This is symmetric.
+- **Anything else.** Δ = 0, so copying costs nothing.
 
-Each case is the AND of at most two one-hot indicators. On {0,1} inputs,
-ReLU(u + v − 1) computes the AND of u and v exactly. Write the update as
-residual = old + Δ. The new one-hot symbol is a {−1, 0, 1} combination of
-these AND units and of copy units. So the MLP maps exact one-hot
-configurations to exact one-hot configurations, and nothing accumulates over
-passes.
+On {0,1} inputs, ReLU(u + v − 1) computes the AND of u and v exactly. The
+bias −1 comes from a constant input channel. So the MLP maps exact one-hot
+configurations to exact one-hot configurations, with {−1, 0, 1} weights in
+both layers, and nothing accumulates over passes. That takes s·a units for
+the first case and s·a² for each direction of entry.
 
-Counting hidden units: there are s·a for the head at i, s·a² for each
-direction of entry, and a copies. Make each halting state self-looping,
-δ(h, σ) = (h, σ, stay). Then the halting configuration is a fixed point, and
-F_M^{T'} = F_M^{T} for every T' ≥ T_M(x). ∎
+Make each halting state self-looping, δ(h, σ) = (h, σ, stay). Then its Δ is
+0, the halting configuration is a fixed point, and F_M^{T′} = F_M^{T} for
+every T′ ≥ T_M(x). The construction in `loopcap/construct.py` builds this
+kind of block for rule 110 (with a latch for the answer) and for S5. ∎
 
 Remarks:
 
@@ -370,8 +375,9 @@ failed in the pilot (§2.6).
 Activations are not quantized: claim A concerns weight bits, and Theorem A
 holds at any activation precision. Between the extreme cells, d = 64 float
 and d = 32 ternary, W·b differs by 39× on `ca110d` and 40× on `mod7`. Even
-the smallest budget, about 20 kbit, is two orders of magnitude above what the
-hand-built blocks need.
+the smallest budget, about 20 kbit, is two orders of magnitude above the
+133 bits of the hand-built rule-110 block. It is also two orders above the
+description length of either rule.
 
 ### 2.4 Training and measurement
 
@@ -509,7 +515,7 @@ TIED n\*:
     weights.
   - A hand-built ternary block of 84 weights (about 133 bits) solves any n,
     given n passes (Theorem B, checked in `tests/test_construct.py`).
-  - So every learned model sits two to three orders of magnitude below what
+  - So every learned model sits two or more orders of magnitude below what
     its bits could represent.
 - **The precision gap opens at the precision switch.**
   - The ternary-designated models were float until step 3,000. At that point
@@ -636,21 +642,28 @@ Three lines of evidence say training:
 2. **Quantization damage.** The ternary/float gap appears at the
    precision-switch step, not as a capacity limit approached gradually
    (§3.2).
-3. **3× training steps:** the 3× check has finished for `ca110d`. There, float n\* rises by
-about 30%:
+3. **3× training steps** (TIED, d = 32, 18,000 steps instead of 6,000):
 
-| family, T | float n\* (base → 3×) | int4 | ternary |
-|---|---|---|---|
-| `ca110d`, T = 8 | 11.5 → 15 | 5.5 → 8.5 | 6 → 6 |
-| `ca110d`, T = 16 | 13 → 17 | 8.5 → 10 | 5.5 → 6 |
+   | family, T | float n\* (base → 3×) | int4 | ternary |
+   |---|---|---|---|
+   | `ca110d`, T = 8 | 11.5 → 15 | 5.5 → 8.5 | 6 → 6 |
+   | `ca110d`, T = 16 | 13 → 17 | 8.5 → 10 | 5.5 → 6 |
+   | `mod7`, T = 8 | 13.5 → 27 | 6.5 → 11.5 | 3.5 → 1.5 |
+   | `mod7`, T = 16 | 23 → 39.5 | 11 → 14.5 | 4.5 → 1.5 |
 
-<!-- MOD7-LONG -->
+   Float n\* rises by about 30% on `ca110d` and roughly doubles on `mod7`.
 
-At the longer budget, `ca110d` n\*(16)/n\*(8) is 1.13. The apparent stall
-between T = 16 and T = 32 at the base budget is therefore partly a training
-limit. The quantized models gain much less, which fits a slow recovery from
-quantization damage. It does not fit a capacity limit, since their bits are
-nowhere near binding.
+   At the longer budget, `ca110d` n\*(16)/n\*(8) is 1.13 and `mod7`'s is
+   1.46. The apparent stall between T = 16 and T = 32 at the base budget is
+   therefore partly a training limit.
+
+   int4 gains less. The d = 32 ternary models do not recover at all, and
+   longer training leaves `mod7` ternary slightly worse. That fits a failure
+   to recover from quantization. It does not fit a capacity limit:
+   - those models have about 20 kbit of weights;
+   - the rules themselves take under 200 bits to write down (rule 110's
+     table is 8 bits, the Z7 addition table 147 bits);
+   - the hand-built rule-110 block uses 133 bits.
 
 
 The pre-registered training-limited flag (n\* still rising by ≥ 10% over the
@@ -663,7 +676,7 @@ Tied, d = 64, float, two seeds, 6,000 steps, with the curriculum.
 
 - **T = 8:** n\* = 1. The models learned only the position-1 copy;
   accuracy at position 2 is at chance (about 1%).
-- **T = 32:** <!-- S5-T32 -->
+- **T = 32:** also n\* = 1 in both seeds, with position 2 at chance.
 
 Permutation composition is NC1-complete, and theory makes it the most
 attractive family. A ternary block of about 23k weights executes it exactly
