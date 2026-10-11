@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Pilot v2 (Amendments 1-2): TIED d=32 T=8, b in {32, 1.58}, float warm-start for half the steps.
-PY=${PY:-/c/Users/patri/.venvs/bluebeam/Scripts/python.exe}
+PY=${PY:-python}
 mkdir -p results/pilot2
 for spec in "ca110d 0.003" "s5 0.001" "s5 0.003" "mod7 0.001" "mod7 0.003"; do
   set -- $spec; task=$1; lr=$2

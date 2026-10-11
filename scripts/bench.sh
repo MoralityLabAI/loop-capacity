@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Per-step time for a few configs, CUDA graph on/off.
-PY=${PY:-/c/Users/patri/.venvs/bluebeam/Scripts/python.exe}
+PY=${PY:-python}
 mkdir -p runs_local/bench
 run() { # name, extra args
   "$PY" -u -m loopcap.train --steps 60 --log-every 20 --eval-every 1000 --eval-count 256 --vram-gb 2.4 \
