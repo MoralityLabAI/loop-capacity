@@ -123,3 +123,50 @@ re-analysed.
 ## Amendments
 
 (none yet)
+
+### Amendment 1 (2026-10-13, after the first Q1 run, before any redesigned Q1 run)
+
+**The Q1 design produced no signal.** Every one of the 54 `mem16` models
+stored about 0 bits: final accuracy was 0.50 and the stored-bit estimates
+fell between −72 and +5. No bound was violated, but only trivially, and the
+flat/grow ratio is undefined.
+
+The design caused this. A key spelled out as 16 binary tokens, with a random
+label, is a random truth table, and it has no low-order structure for
+gradient descent to follow. Each unit sees a 50/50 label split whatever it
+computes. The capacity results this was modelled on (Allen-Zhu & Li; Morris
+et al.) give keys their own embeddings.
+
+**Redesign: task `memrand`.**
+
+- **Keys.** There are N = 65,536 keys. Each is a single token, whose
+  embedding is a fixed random Gaussian vector (seed 5150) shared by all
+  models.
+- **Embeddings are input data.** They are frozen, unquantized, and not
+  counted in W. W therefore counts only the block and the readout.
+- **Labels and sequences.** Each label is a random bit (seed 4243). A
+  sequence is BOS followed by the key token, and the label is read at the
+  key position.
+- **Lineage.** This is the classical capacity setting of random inputs with
+  random labels (Cover; Baum). The grid, training settings, measurement and
+  decision rules are those of Q1 above, with `memrand` in place of `mem16`.
+
+**Prediction.**
+
+- A-bound holds everywhere.
+- Float stores well under 16 bits per parameter. Ternary stays under 1.58.
+- Stored bits may rise from T = 1 to T = 4. A deeper effective network
+  realizes more functions with the same real-valued weights (Bartlett et
+  al.), so this would not contradict claim A. I expect them to be flat
+  beyond T = 4.
+
+**Q2 results as they stood when this amendment was written** (reported in
+full in the note):
+
+- Local attention did *not* lift the plateau. mod7 d = 64 local reached a
+  median n\* of 59.5 at every pass count from 64 to 512, against 51 for
+  global.
+- Neither `ca110d64` variant extrapolated.
+- Two of the six local mod7 models generalized well past their training
+  horizon, to n\* = 107 and 126. In those two, accuracy decays gradually
+  with distance and has no cliff at the 128-token training length.
