@@ -57,6 +57,8 @@ TASKS = {
     "s5": TaskSpec("s5", vocab=121, classes=120),
     "ca110": TaskSpec("ca110", vocab=3, classes=2),
     "ca110d": TaskSpec("ca110d", vocab=3, classes=2, heads=CA_HEADS),
+    "ca110d64": TaskSpec("ca110d64", vocab=3, classes=2, heads=64),
+    "mem16": TaskSpec("mem16", vocab=3, classes=2),
     "mod7": TaskSpec("mod7", vocab=8, classes=7),
 }
 
@@ -134,6 +136,33 @@ def ca110_diagonal_targets(x: torch.Tensor, heads: int = CA_HEADS) -> torch.Tens
     return out.reshape(*x.shape, heads)
 
 
+MEM_BITS = 16
+MEM_SEED = 4242
+
+
+def mem_table(device) -> torch.Tensor:
+    """A fixed uniformly random Boolean function on 16 bits (labels for all 65,536 keys)."""
+    key = ("mem", str(device))
+    if key not in _TABLE_CACHE:
+        g = torch.Generator()
+        g.manual_seed(MEM_SEED)
+        _TABLE_CACHE[key] = torch.randint(0, 2, (2 ** MEM_BITS,), generator=g).to(device)
+    return _TABLE_CACHE[key]
+
+
+def key_bits(keys: torch.Tensor) -> torch.Tensor:
+    """Integer keys -> [..., 16] bits, most significant first."""
+    shifts = torch.arange(MEM_BITS - 1, -1, -1, device=keys.device)
+    return (keys.unsqueeze(-1) >> shifts) & 1
+
+
+def mem_all_keys(device) -> tuple[torch.Tensor, torch.Tensor]:
+    """Every key once (with BOS) and its label: the whole memorization table."""
+    keys = torch.arange(2 ** MEM_BITS, device=device)
+    bos = torch.full((keys.shape[0], 1), TASKS["mem16"].bos, dtype=torch.long, device=device)
+    return torch.cat([bos, key_bits(keys)], dim=-1), mem_table(device)
+
+
 def mod7_targets(a: torch.Tensor) -> torch.Tensor:
     return torch.cumsum(a, dim=-1) % 7
 
@@ -148,9 +177,14 @@ def sample(task: str, shape: tuple[int, ...], n: int, generator: torch.Generator
     elif task == "ca110":
         tok = torch.randint(0, 2, (*shape, n), generator=generator, device=device)
         tgt = ca110_targets(tok)
-    elif task == "ca110d":
+    elif task in ("ca110d", "ca110d64"):
         tok = torch.randint(0, 2, (*shape, n), generator=generator, device=device)
         tgt = ca110_diagonal_targets(tok, spec.heads)
+    elif task == "mem16":
+        assert n == MEM_BITS, "mem16 sequences are BOS + 16 key bits"
+        keys = torch.randint(0, 2 ** MEM_BITS, shape, generator=generator, device=device)
+        tok = key_bits(keys)
+        tgt = mem_table(device)[keys].unsqueeze(-1).expand(*shape, n).contiguous()
     elif task == "mod7":
         tok = torch.randint(0, 7, (*shape, n), generator=generator, device=device)
         tgt = mod7_targets(tok)

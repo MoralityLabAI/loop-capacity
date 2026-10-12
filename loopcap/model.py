@@ -36,6 +36,7 @@ class ArchSpec:
     n_blocks: int  # distinct blocks: 1 for tied, == passes for untied
     passes: int
     head_dim: int = 8
+    window: int = 0  # 0: full causal attention; w > 0: each position sees itself and w-1 predecessors
 
     @property
     def heads(self) -> int:
@@ -127,7 +128,14 @@ def bmm(x: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
     return y.view(m, *lead, w.shape[-1])
 
 
-def block_forward(z: torch.Tensor, wqkv, wo, w1, w2, heads: int, cos, sin) -> torch.Tensor:
+def band_mask(seq: int, window: int, device) -> torch.Tensor:
+    """Boolean [S, S] mask, True where key j is visible from query i: i-window < j <= i."""
+    i = torch.arange(seq, device=device)[:, None]
+    j = torch.arange(seq, device=device)[None, :]
+    return (j <= i) & (j > i - window)
+
+
+def block_forward(z: torch.Tensor, wqkv, wo, w1, w2, heads: int, cos, sin, mask=None) -> torch.Tensor:
     m, b, s, d = z.shape
     hd = d // heads
     qkv = bmm(rms_norm(z), wqkv).view(m, b, s, 3, heads, hd)
@@ -135,7 +143,10 @@ def block_forward(z: torch.Tensor, wqkv, wo, w1, w2, heads: int, cos, sin) -> to
     k = apply_rope(qkv[:, :, :, 1], cos, sin)
     v = qkv[:, :, :, 2]
     q, k, v = (t.permute(0, 1, 3, 2, 4).reshape(m * b, heads, s, hd) for t in (q, k, v))
-    att = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+    if mask is None:
+        att = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+    else:
+        att = F.scaled_dot_product_attention(q, k, v, attn_mask=mask)
     att = att.view(m, b, heads, s, hd).permute(0, 1, 3, 2, 4).reshape(m, b, s, d)
     z = z + bmm(att, wo)
     z = z + bmm(F.gelu(bmm(rms_norm(z), w1)), w2)
@@ -185,6 +196,14 @@ class ModelStack(nn.Module):
             self._rope[seq] = rope_tables(seq, self.arch.head_dim, device)
         return self._rope[seq]
 
+    def attn_mask(self, seq: int, device):
+        if not self.arch.window:
+            return None
+        key = ("mask", seq)
+        if key not in self._rope:
+            self._rope[key] = band_mask(seq, self.arch.window, device)
+        return self._rope[key]
+
     def quantized(self):
         q = self.quant
         blocks = [(q(self.wqkv[i]), q(self.wo[i]), q(self.w1[i]), q(self.w2[i]))
@@ -218,8 +237,10 @@ class ModelStack(nn.Module):
         w = final_weight
         weights = [1.0] if T == 1 else [(1 - w) / (T - 1)] * (T - 1) + [w]
 
+        amask = self.attn_mask(x.shape[-1], x.device)
+
         def step(h, wqkv, wo, w1, w2):
-            hn = block_forward(h + e, wqkv, wo, w1, w2, arch.heads, cos, sin)
+            hn = block_forward(h + e, wqkv, wo, w1, w2, arch.heads, cos, sin, amask)
             logits = bmm(rms_norm(hn[:, :, 1:]), ro_q)
             if multilabel:
                 ce = F.binary_cross_entropy_with_logits(logits.float(), yf, reduction="none")
@@ -259,15 +280,32 @@ class ModelStack(nn.Module):
         h = torch.zeros_like(e)
         out = {}
         last = max(record)
+        mask = self.attn_mask(x.shape[-1], x.device)
         if arch.n_blocks > 1:
             assert last <= arch.n_blocks
         for t in range(last):
             blk = blocks[self.block_index(t)]
-            h = block_forward(h + e, *blk, arch.heads, cos, sin)
+            h = block_forward(h + e, *blk, arch.heads, cos, sin, mask)
             if (t + 1) in record:
                 logits = bmm(rms_norm(h[:, :, 1:]), ro_q)
                 if self.multilabel:
                     out[t + 1] = ((logits > 0).long() == y).sum((1, 2))
                 else:
                     out[t + 1] = (logits.argmax(-1) == y).sum(1)
+        return out
+
+    @torch.no_grad()
+    def last_logits(self, x: torch.Tensor, record: list[int]) -> dict[int, torch.Tensor]:
+        """Logits [M, B, classes] at the last position after each pass count in `record`."""
+        arch = self.arch
+        emb_q, blocks, ro_q = self.quantized()
+        e = self.embed(emb_q, x)
+        cos, sin = self.rope(x.shape[-1], x.device)
+        mask = self.attn_mask(x.shape[-1], x.device)
+        h = torch.zeros_like(e)
+        out = {}
+        for t in range(max(record)):
+            h = block_forward(h + e, *blocks[self.block_index(t)], arch.heads, cos, sin, mask)
+            if (t + 1) in record:
+                out[t + 1] = bmm(rms_norm(h[:, :, -1:]), ro_q)[:, :, 0].float()
         return out

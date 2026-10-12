@@ -13,6 +13,7 @@ generated in chunks of many steps for the same reason.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import math
 import os
@@ -25,13 +26,13 @@ import torch
 from .metrics import THRESHOLDS, n_star
 from .model import ModelStack, tied_arch, untied_compute_arch, untied_matched_arch
 from .quant import weight_bits
-from .tasks import TASKS, eval_set, sample
+from .tasks import TASKS, eval_set, mem_all_keys, sample
 
 ARMS = {"tied": tied_arch, "untied_w": untied_matched_arch, "untied_c": untied_compute_arch}
 
 
-def make_arch(task: str, arm: str, d: int, T: int):
-    return ARMS[arm](task, d, T)
+def make_arch(task: str, arm: str, d: int, T: int, window: int = 0):
+    return dataclasses.replace(ARMS[arm](task, d, T), window=window)
 
 
 def set_priority(low: bool) -> None:
@@ -100,6 +101,29 @@ def evaluate(model: ModelStack, x_eval, y_eval, record: list[int], chunk: int,
     return {t: (c / denom).cpu() for t, c in totals.items()}
 
 
+def eval_memorization(model: ModelStack, device, record: list[int], amp: bool,
+                      chunk: int = 4096) -> dict[int, dict[str, torch.Tensor]]:
+    """Stored bits about the random Boolean function, over all 65,536 keys:
+    sum_k (1 - CE_k / ln 2), with CE_k the last-position cross-entropy."""
+    x, y = mem_all_keys(device)
+    m = model.m
+    ce_sum = {t: torch.zeros(m, dtype=torch.float64, device=device) for t in record}
+    correct = {t: torch.zeros(m, dtype=torch.float64, device=device) for t in record}
+    for i in range(0, x.shape[0], chunk):
+        xb = x[i:i + chunk].unsqueeze(0).expand(m, -1, -1)
+        yb = y[i:i + chunk]
+        with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
+            got = model.last_logits(xb, record)
+        for t, lg in got.items():
+            logp = torch.log_softmax(lg, dim=-1)  # [M, B, 2]
+            ce = -logp.gather(-1, yb.view(1, -1, 1).expand(m, -1, 1)).squeeze(-1)
+            ce_sum[t] += ce.double().sum(1)
+            correct[t] += (lg.argmax(-1) == yb.view(1, -1)).double().sum(1)
+    n = x.shape[0]
+    return {t: {"bits": (n - ce_sum[t] / math.log(2)).cpu(), "acc": (correct[t] / n).cpu(),
+                "ce_bits": (ce_sum[t] / math.log(2) / n).cpu()} for t in record}
+
+
 def test_passes(arm: str, T: int, max_test: int) -> list[int]:
     if arm != "tied":
         return [T]
@@ -125,7 +149,11 @@ def run(args) -> dict:
         torch.cuda.set_per_process_memory_fraction(min(0.95, args.vram_gb / total), device)
     use_graph = args.graph and device.type == "cuda"
 
-    arch = make_arch(args.task, args.arm, args.d, args.T)
+    arch = make_arch(args.task, args.arm, args.d, args.T, args.window)
+    is_mem = args.task == "mem16"
+    if is_mem:
+        args.seq = 16
+        args.curriculum = False
     bits = [b for b in args.bits for _ in args.seeds]
     seeds = [s for _ in args.bits for s in args.seeds]
     model = ModelStack(arch, bits, seeds, device, per_channel=args.scale == "channel")
@@ -154,6 +182,9 @@ def run(args) -> dict:
         size_mask.copy_((idx < torch.tensor(horizon, device=device)[:, None]).float())
 
     apply_horizon()
+    if is_mem:  # loss on the last position only
+        size_mask.zero_()
+        size_mask[:, -1] = 1.0
 
     log_path = Path(args.out).with_suffix(".log.jsonl")
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -227,23 +258,38 @@ def run(args) -> dict:
             if new != horizon:
                 horizon = new
                 apply_horizon()
+    if is_mem:  # loss on the last position only
+        size_mask.zero_()
+        size_mask[:, -1] = 1.0
         if (step + 1) % args.log_every == 0 or step == 0:
             log({"event": "train", "step": step + 1, "lr": lr, "loss": loss.cpu().tolist(),
                  "gnorm": gnorm.cpu().tolist(), "horizon": horizon, "elapsed": time.time() - t0})
         if (step + 1) % args.eval_every == 0 or step + 1 == args.steps:
-            acc = evaluate(model, x_eval[:quick], y_eval[:quick], [arch.passes], args.eval_chunk,
-                           args.amp)[arch.passes]
-            ns = [n_star(acc[i], 0.9) for i in range(m)]
-            history.append({"step": step + 1, "n_star_0.9": ns, "mean_acc": acc.mean(1).tolist()})
+            if is_mem:
+                r = eval_memorization(model, device, [arch.passes], args.amp)[arch.passes]
+                history.append({"step": step + 1, "bits": r["bits"].tolist(), "acc": r["acc"].tolist(),
+                                "n_star_0.9": [0] * m, "mean_acc": r["acc"].tolist()})
+            else:
+                acc = evaluate(model, x_eval[:quick], y_eval[:quick], [arch.passes], args.eval_chunk,
+                               args.amp)[arch.passes]
+                ns = [n_star(acc[i], 0.9) for i in range(m)]
+                history.append({"step": step + 1, "n_star_0.9": ns, "mean_acc": acc.mean(1).tolist()})
             log({"event": "eval", **history[-1], "elapsed": time.time() - t0})
     train_seconds = time.time() - t0
 
     record = test_passes(args.arm, args.T, args.max_test_passes)
-    accs = evaluate(model, x_eval, y_eval, record, args.eval_chunk, args.amp)
+    if is_mem:
+        record = [args.T]
+        mem = eval_memorization(model, device, record, args.amp)
+    else:
+        accs = evaluate(model, x_eval, y_eval, record, args.eval_chunk, args.amp)
     models = []
     for i in range(m):
         per_t = {}
         for t in record:
+            if is_mem:
+                per_t[str(t)] = {k: float(v[i]) for k, v in mem[t].items()}
+                continue
             a = accs[t][i]
             per_t[str(t)] = {"acc": [round(float(v), 4) for v in a],
                              "n_star": {str(th): n_star(a, th) for th in THRESHOLDS}}
@@ -254,7 +300,8 @@ def run(args) -> dict:
             "scale_bits": 0 if bits[i] >= 32 else 32 * arch.scale_count(args.scale == "channel"),
             "final_loss": float(loss[i]),
             "history": [{"step": h["step"], "n_star_0.9": h["n_star_0.9"][i],
-                         "mean_acc": h["mean_acc"][i]} for h in history],
+                         "mean_acc": h["mean_acc"][i], **({"bits": h["bits"][i]} if is_mem else {})}
+                        for h in history],
             "eval": per_t,
         })
     result = {
@@ -263,6 +310,7 @@ def run(args) -> dict:
         "train_seconds": train_seconds, "eval_count": args.eval_count, "seq": args.seq,
         "amp": args.amp, "graph": use_graph, "final_weight": args.final_weight,
         "quant_start": args.quant_start, "curriculum": args.curriculum, "scale": args.scale,
+        "window": args.window,
         "final_horizon": horizon,
         "record": record, "models": models,
         "device": torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
@@ -276,7 +324,8 @@ def run(args) -> dict:
         torch.save({"arch": arch.to_dict(), "bits": bits, "seeds": seeds,
                     "state": {k: v.cpu() for k, v in model.state_dict().items()}}, args.ckpt)
     log({"event": "done", "train_seconds": train_seconds,
-         "n_star_0.9_at_T": [mm["eval"][str(args.T)]["n_star"]["0.9"] for mm in models]})
+         "final": [mm["eval"][str(args.T)].get("n_star", {}).get("0.9", mm["eval"][str(args.T)].get("bits"))
+                   for mm in models]})
     logf.close()
     return result
 
@@ -306,6 +355,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--threads", type=int, default=2)
     p.add_argument("--vram-gb", type=float, default=0.0)
     p.add_argument("--seq", type=int, default=256)
+    p.add_argument("--window", type=int, default=0, help="local attention window (0 = full causal)")
     p.add_argument("--amp", action=argparse.BooleanOptionalAction, default=True,
                    help="bf16 autocast for matmuls/attention; residual stream stays fp32")
     p.add_argument("--graph", action=argparse.BooleanOptionalAction, default=True,

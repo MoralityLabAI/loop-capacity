@@ -69,3 +69,50 @@ def test_per_channel_quantizer_levels():
     for j in range(8):
         assert q[1, :, j].unique().numel() <= 3
         assert q[0, :, j].unique().numel() <= 15
+
+
+def test_band_mask_and_local_model_runs():
+    import dataclasses
+    from loopcap.model import band_mask
+    m = band_mask(6, 3, CPU)
+    assert m[5].tolist() == [False, False, False, True, True, True]
+    assert m[1].tolist() == [True, True, False, False, False, False]
+    arch = dataclasses.replace(tied_arch("mod7", 16, 3), window=2)
+    model = ModelStack(arch, [32, 1.58], [1, 2], CPU)
+    g = torch.Generator()
+    g.manual_seed(0)
+    x, y = sample("mod7", (2, 3), 12, g, CPU)
+    loss = model.train_loss(x, y)
+    assert torch.isfinite(loss).all()
+
+
+def test_local_window_limits_receptive_field():
+    """With window w and T passes, position n cannot see tokens more than T*(w-1) back."""
+    import dataclasses
+    arch = dataclasses.replace(tied_arch("mod7", 16, 2), window=2)
+    model = ModelStack(arch, [32], [1], CPU)
+    g = torch.Generator()
+    g.manual_seed(1)
+    x, _ = sample("mod7", (1, 1), 10, g, CPU)
+    y = x.clone()
+    y[..., 1] = (y[..., 1] + 1) % 7  # change the first input token
+    a = model.last_logits(x, [2])[2]
+    b = model.last_logits(y, [2])[2]
+    assert torch.allclose(a, b)  # the last position is 10 steps away; reach is 2*(2-1) = 2
+
+
+def test_mem16_task_and_eval():
+    from loopcap.tasks import mem_all_keys, mem_table
+    from loopcap.train import eval_memorization
+    x, y = mem_all_keys(CPU)
+    assert x.shape == (65536, 17) and y.shape == (65536,)
+    assert abs(float(y.float().mean()) - 0.5) < 0.01
+    g = torch.Generator()
+    g.manual_seed(0)
+    xs, ys = sample("mem16", (2, 5), 16, g, CPU)
+    keys = (xs[..., 1:] * (2 ** torch.arange(15, -1, -1))).sum(-1)
+    assert torch.equal(ys[..., -1], mem_table(CPU)[keys])
+    model = ModelStack(tied_arch("mem16", 8, 1), [32], [1], CPU)
+    r = eval_memorization(model, CPU, [1], amp=False, chunk=16384)[1]
+    assert abs(float(r["acc"][0]) - 0.5) < 0.02  # an untrained model is at chance
+    assert torch.isfinite(r["bits"]).all()
