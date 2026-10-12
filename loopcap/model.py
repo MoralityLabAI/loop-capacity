@@ -45,10 +45,12 @@ class ArchSpec:
     def param_count(self) -> int:
         spec = TASKS[self.task]
         per_block = 4 * self.d * self.d + 2 * self.d * self.hidden
-        return spec.vocab * self.d + self.n_blocks * per_block + self.d * spec.outputs
+        embed = 0 if spec.frozen_embed else spec.vocab * self.d
+        return embed + self.n_blocks * per_block + self.d * spec.outputs
 
     def tensor_count(self) -> int:
-        return 2 + 4 * self.n_blocks
+        """Quantized weight tensors (each carries one fp32 scale)."""
+        return (1 if TASKS[self.task].frozen_embed else 2) + 4 * self.n_blocks
 
     def scale_count(self, per_channel: bool) -> int:
         """fp32 scales a quantized model stores."""
@@ -177,6 +179,12 @@ class ModelStack(nn.Module):
 
         init.counter = 0
         self.emb = init((spec.vocab, d), 1.0)
+        self.frozen_embed = spec.frozen_embed
+        if spec.frozen_embed:  # fixed random key vectors: input data, shared, not trained or quantized
+            from .tasks import memr_embedding
+            table = memr_embedding(d)
+            self.emb = nn.Parameter(table.unsqueeze(0).expand(len(seeds), -1, -1).contiguous().to(device),
+                                    requires_grad=False)
         self.wqkv = nn.ParameterList()
         self.wo = nn.ParameterList()
         self.w1 = nn.ParameterList()
@@ -208,7 +216,8 @@ class ModelStack(nn.Module):
         q = self.quant
         blocks = [(q(self.wqkv[i]), q(self.wo[i]), q(self.w1[i]), q(self.w2[i]))
                   for i in range(self.arch.n_blocks)]
-        return q(self.emb), blocks, q(self.readout)
+        emb = self.emb if self.frozen_embed else q(self.emb)
+        return emb, blocks, q(self.readout)
 
     def embed(self, emb_q: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
         # x: [M, B, S] -> [M, B, S, d]

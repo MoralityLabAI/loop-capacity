@@ -102,10 +102,10 @@ def evaluate(model: ModelStack, x_eval, y_eval, record: list[int], chunk: int,
 
 
 def eval_memorization(model: ModelStack, device, record: list[int], amp: bool,
-                      chunk: int = 4096) -> dict[int, dict[str, torch.Tensor]]:
+                      chunk: int = 4096, task: str = "mem16") -> dict[int, dict[str, torch.Tensor]]:
     """Stored bits about the random Boolean function, over all 65,536 keys:
     sum_k (1 - CE_k / ln 2), with CE_k the last-position cross-entropy."""
-    x, y = mem_all_keys(device)
+    x, y = mem_all_keys(device, task)
     m = model.m
     ce_sum = {t: torch.zeros(m, dtype=torch.float64, device=device) for t in record}
     correct = {t: torch.zeros(m, dtype=torch.float64, device=device) for t in record}
@@ -150,15 +150,15 @@ def run(args) -> dict:
     use_graph = args.graph and device.type == "cuda"
 
     arch = make_arch(args.task, args.arm, args.d, args.T, args.window)
-    is_mem = args.task == "mem16"
+    is_mem = args.task in ("mem16", "memrand")
     if is_mem:
-        args.seq = 16
+        args.seq = 16 if args.task == "mem16" else 1
         args.curriculum = False
     bits = [b for b in args.bits for _ in args.seeds]
     seeds = [s for _ in args.bits for s in args.seeds]
     model = ModelStack(arch, bits, seeds, device, per_channel=args.scale == "channel")
     m = model.m
-    params = list(model.parameters())
+    params = [p for p in model.parameters() if p.requires_grad]
     if use_graph:
         lr_t = torch.tensor(args.lr, device=device)
         opt = torch.optim.AdamW(params, lr=lr_t, betas=(0.9, 0.98), weight_decay=args.wd,
@@ -258,15 +258,12 @@ def run(args) -> dict:
             if new != horizon:
                 horizon = new
                 apply_horizon()
-    if is_mem:  # loss on the last position only
-        size_mask.zero_()
-        size_mask[:, -1] = 1.0
         if (step + 1) % args.log_every == 0 or step == 0:
             log({"event": "train", "step": step + 1, "lr": lr, "loss": loss.cpu().tolist(),
                  "gnorm": gnorm.cpu().tolist(), "horizon": horizon, "elapsed": time.time() - t0})
         if (step + 1) % args.eval_every == 0 or step + 1 == args.steps:
             if is_mem:
-                r = eval_memorization(model, device, [arch.passes], args.amp)[arch.passes]
+                r = eval_memorization(model, device, [arch.passes], args.amp, task=args.task)[arch.passes]
                 history.append({"step": step + 1, "bits": r["bits"].tolist(), "acc": r["acc"].tolist(),
                                 "n_star_0.9": [0] * m, "mean_acc": r["acc"].tolist()})
             else:
@@ -280,7 +277,7 @@ def run(args) -> dict:
     record = test_passes(args.arm, args.T, args.max_test_passes)
     if is_mem:
         record = [args.T]
-        mem = eval_memorization(model, device, record, args.amp)
+        mem = eval_memorization(model, device, record, args.amp, task=args.task)
     else:
         accs = evaluate(model, x_eval, y_eval, record, args.eval_chunk, args.amp)
     models = []

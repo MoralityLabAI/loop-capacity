@@ -116,3 +116,38 @@ def test_mem16_task_and_eval():
     r = eval_memorization(model, CPU, [1], amp=False, chunk=16384)[1]
     assert abs(float(r["acc"][0]) - 0.5) < 0.02  # an untrained model is at chance
     assert torch.isfinite(r["bits"]).all()
+
+
+def test_memrand_frozen_embedding_not_counted_or_trained():
+    from loopcap.tasks import TASKS
+    from loopcap.train import eval_memorization
+    arch = tied_arch("memrand", 16, 2)
+    assert arch.param_count() == 12 * 16 * 16 + 16 * 2  # block + readout only
+    model = ModelStack(arch, [32, 1.58], [1, 2], CPU)
+    assert not model.emb.requires_grad
+    assert torch.equal(model.emb[0], model.emb[1])  # same key vectors for every model
+    g = torch.Generator()
+    g.manual_seed(0)
+    x, y = sample("memrand", (2, 8), 1, g, CPU)
+    assert x.shape == (2, 8, 2) and y.shape == (2, 8, 1)
+    model.train_loss(x, y).sum().backward()
+    assert model.emb.grad is None
+    r = eval_memorization(model, CPU, [2], amp=False, chunk=16384, task="memrand")[2]
+    assert abs(float(r["acc"][0]) - 0.5) < 0.02
+    assert TASKS["memrand"].frozen_embed
+
+
+def test_training_logs_and_evaluates_inside_the_loop(tmp_path):
+    """Regression: periodic train logs and evaluations must happen during training."""
+    import json
+    from loopcap.train import parser, run
+    out = tmp_path / "r.json"
+    args = parser().parse_args(["--task", "mod7", "--arm", "tied", "--d", "16", "--T", "2", "--bits", "32",
+                                "--seeds", "1", "--steps", "6", "--log-every", "2", "--eval-every", "3",
+                                "--eval-count", "8", "--probe-count", "8", "--seq", "8", "--device", "cpu",
+                                "--no-amp", "--out", str(out)])
+    run(args)
+    events = [json.loads(l)["event"] for l in out.with_suffix(".log.jsonl").read_text().splitlines()]
+    assert events.count("train") >= 3 and events.count("eval") == 2
+    r = json.loads(out.read_text())
+    assert [h["step"] for h in r["models"][0]["history"]] == [3, 6]

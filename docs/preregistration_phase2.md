@@ -170,3 +170,34 @@ full in the note):
 - Two of the six local mod7 models generalized well past their training
   horizon, to n\* = 107 and 126. In those two, accuracy decays gradually
   with distance and has no cliff at the 128-token training length.
+
+### Amendment 2 (2026-10-13, before any `memrand` grid run)
+
+**Training budget for `memrand`.**
+
+- **Smoke tests** (d = 16, T = 4, float, outside the grid):
+  - batch 128 × 3,000 steps (6 epochs) stored about 70 bits;
+  - batch 1,024 × 20,000 steps (312 epochs) stored 4,334 and 3,752 bits,
+    about 1.3 bits per parameter.
+- **The change.** The pre-registered 20,000 steps at batch 128 would leave
+  the models far from saturation, so `memrand` runs batch 1,024 per model
+  for 60,000 steps, about 940 epochs. Stored bits are logged every 6,000
+  steps for the saturation check. Everything else is unchanged.
+
+**Bug found and fixed.**
+
+- **What went wrong.** A text patch applied during an interrupted session
+  (`loopcap/train.py`, Q2 code) moved the per-step logging and the periodic
+  evaluation out of the training loop. As a result, the phase-2 runs before
+  this amendment have only the final train log and a single end-of-training
+  evaluation.
+- **What it did not affect.** Training, the curriculum and the final
+  evaluations ran correctly.
+- **What is lost.**
+  - Mid-training history for those runs is lost.
+  - `mem16`'s saturation check therefore cannot be computed. That run gave
+    no signal anyway.
+  - Phase 1 used older code and is unaffected.
+- **The fix.** The code is fixed, and a regression test
+  (`tests/test_model.py::test_training_logs_and_evaluates_inside_the_loop`)
+  pins the behaviour.

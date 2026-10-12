@@ -62,9 +62,10 @@ def test_sample_shapes_and_bos():
     g = torch.Generator()
     g.manual_seed(0)
     for task, spec in TASKS.items():
-        x, y = sample(task, (2, 3), 16, g, torch.device("cpu"))
+        n = 1 if task == "memrand" else 16
+        x, y = sample(task, (2, 3), n, g, torch.device("cpu"))
         extra = (spec.heads,) if spec.heads else ()
-        assert x.shape == (2, 3, 17) and y.shape == (2, 3, 16, *extra)
+        assert x.shape == (2, 3, n + 1) and y.shape == (2, 3, n, *extra)
         assert (x[..., 0] == spec.bos).all()
         assert int(y.max()) < spec.classes
 

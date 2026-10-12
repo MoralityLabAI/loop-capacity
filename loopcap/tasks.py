@@ -40,6 +40,7 @@ class TaskSpec:
     vocab: int  # input vocabulary including BOS (BOS = vocab - 1)
     classes: int
     heads: int = 0  # >0: multi-label task with this many binary heads per position
+    frozen_embed: bool = False  # embeddings are fixed random input data, not parameters
 
     @property
     def bos(self) -> int:
@@ -59,6 +60,7 @@ TASKS = {
     "ca110d": TaskSpec("ca110d", vocab=3, classes=2, heads=CA_HEADS),
     "ca110d64": TaskSpec("ca110d64", vocab=3, classes=2, heads=64),
     "mem16": TaskSpec("mem16", vocab=3, classes=2),
+    "memrand": TaskSpec("memrand", vocab=65536 + 1, classes=2, frozen_embed=True),
     "mod7": TaskSpec("mod7", vocab=8, classes=7),
 }
 
@@ -156,8 +158,33 @@ def key_bits(keys: torch.Tensor) -> torch.Tensor:
     return (keys.unsqueeze(-1) >> shifts) & 1
 
 
-def mem_all_keys(device) -> tuple[torch.Tensor, torch.Tensor]:
+MEMR_KEYS = 65536
+MEMR_LABEL_SEED = 4243
+MEMR_EMBED_SEED = 5150
+
+
+def memr_labels(device) -> torch.Tensor:
+    key = ("memr", str(device))
+    if key not in _TABLE_CACHE:
+        g = torch.Generator()
+        g.manual_seed(MEMR_LABEL_SEED)
+        _TABLE_CACHE[key] = torch.randint(0, 2, (MEMR_KEYS,), generator=g).to(device)
+    return _TABLE_CACHE[key]
+
+
+def memr_embedding(d: int) -> torch.Tensor:
+    """Fixed random key vectors [keys + BOS, d], identical for every model."""
+    g = torch.Generator()
+    g.manual_seed(MEMR_EMBED_SEED + d)
+    return torch.randn(MEMR_KEYS + 1, d, generator=g)
+
+
+def mem_all_keys(device, task: str = "mem16") -> tuple[torch.Tensor, torch.Tensor]:
     """Every key once (with BOS) and its label: the whole memorization table."""
+    if task == "memrand":
+        keys = torch.arange(MEMR_KEYS, device=device)
+        bos = torch.full((MEMR_KEYS, 1), TASKS["memrand"].bos, dtype=torch.long, device=device)
+        return torch.cat([bos, keys.unsqueeze(-1)], dim=-1), memr_labels(device)
     keys = torch.arange(2 ** MEM_BITS, device=device)
     bos = torch.full((keys.shape[0], 1), TASKS["mem16"].bos, dtype=torch.long, device=device)
     return torch.cat([bos, key_bits(keys)], dim=-1), mem_table(device)
@@ -180,6 +207,11 @@ def sample(task: str, shape: tuple[int, ...], n: int, generator: torch.Generator
     elif task in ("ca110d", "ca110d64"):
         tok = torch.randint(0, 2, (*shape, n), generator=generator, device=device)
         tgt = ca110_diagonal_targets(tok, spec.heads)
+    elif task == "memrand":
+        assert n == 1, "memrand sequences are BOS + one key token"
+        keys = torch.randint(0, MEMR_KEYS, shape, generator=generator, device=device)
+        tok = keys.unsqueeze(-1)
+        tgt = memr_labels(device)[keys].unsqueeze(-1)
     elif task == "mem16":
         assert n == MEM_BITS, "mem16 sequences are BOS + 16 key bits"
         keys = torch.randint(0, 2 ** MEM_BITS, shape, generator=generator, device=device)

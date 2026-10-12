@@ -51,15 +51,18 @@ def jobs(py: str, ckpt_root: Path) -> list[dict]:
             cmds.append(extrap + ["--ckpt", str(ck), "--seq", "512",
                                   "--passes", "16", "32", "64", "128", "256", "512", "--out", str(final)])
         js.append({"id": jid, "out": final, "cmds": cmds, "skip_first_if": res})
-    # Q1: memorization capacity against passes, largest first
+    # Q1: memorization capacity against passes, largest first. mem16 (the original
+    # design, amendment 1) gave no signal; memrand replaces it.
     mem = [(32, 16), (16, 32), (16, 16), (32, 4), (16, 8), (32, 1), (16, 4), (16, 2), (16, 1)]
-    for d, T in mem:
-        jid = f"mem16_tied_d{d}_T{T}"
-        res = OUT / "runs" / f"{jid}.json"
-        js.append({"id": jid, "out": res, "cmds": [
-            train + ["--task", "mem16", "--arm", "tied", "--d", str(d), "--T", str(T), "--seq", "16",
-                     "--steps", "20000", "--batch", "128", "--eval-every", "2000", *COMMON,
-                     "--out", str(res), "--ckpt", str(ckpt_root / "phase2" / f"{jid}.pt")]]})
+    for task, seq in (("mem16", "16"), ("memrand", "1")):
+        for d, T in mem:
+            jid = f"{task}_tied_d{d}_T{T}"
+            res = OUT / "runs" / f"{jid}.json"
+            js.append({"id": jid, "out": res, "cmds": [
+                train + ["--task", task, "--arm", "tied", "--d", str(d), "--T", str(T), "--seq", seq,
+                         *(["--steps", "20000", "--batch", "128", "--eval-every", "2000"] if task == "mem16"
+                           else ["--steps", "60000", "--batch", "1024", "--eval-every", "6000"]), *COMMON,
+                         "--out", str(res), "--ckpt", str(ckpt_root / "phase2" / f"{jid}.pt")]]})
     return js
 
 
