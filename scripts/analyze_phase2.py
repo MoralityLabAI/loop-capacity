@@ -102,6 +102,7 @@ def fig_q1(rows, task="memrand"):
         ax.set_xticklabels([str(t) for t in Ts])
         ax.minorticks_off()
         ax.set_yscale("log", base=2)
+        ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
         ax.set_xlabel("passes T")
         ax.set_title(f"{task}, tied d = {d} (W = {W:,})", loc="left", fontsize=11)
     axes[0][0].set_ylabel("stored bits per parameter")

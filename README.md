@@ -34,8 +34,17 @@ its weight bits W·b?
   - It loses to untied at equal compute: 12.5 vs 23.5 at T = 32.
   - Across arms, n\* ∝ W^0.24 · (W·T)^0.18 · b^0.26 on rule 110.
 - **Permutation composition (S5)** was not learned at all at this scale.
+- **Phase 2** ([pre-registration](docs/preregistration_phase2.md),
+  [summary](results/phase2/summary.md)).
+  - Measured directly, storage is flat in passes: tied models memorizing
+    random labels store about 1.8 bits per parameter in float, against a
+    16-bit bound, from T = 4 to T = 32.
+  - Serial reach grows with passes only out to the problem sizes training
+    covered.
+  - Local attention did not lift the extrapolation plateau.
+  - Passes buy computation, not storage.
 
-See `docs/note.md` §3–4.
+See `docs/note.md` §3–4 and §6.
 
 ## Layout
 
