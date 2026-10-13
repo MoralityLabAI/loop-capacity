@@ -4,6 +4,6 @@ Median n* over bit-widths and seeds at theta = 0.9; baseline = same recipe witho
 
 | arm | progressive n* by test passes | baseline n* | stable | extrapolates | effect at 128 passes (ratio) | horizon: progressive / baseline |
 |---|---|---|---|---|---|---|
-| P-mod7-local | pending | | | | | |
-| P-mod7-global | pending | | | | | |
-| P-ca-local | pending | | | | | |
+| P-mod7-local | 16: 18, 32: 37, 64: 63, 128: 69, 256: 68.5, 512: 67.5 | 16: 19.5, 32: 37.5, 64: 59.5, 128: 59.5, 256: 59.5, 512: 59 | True | False | no clear effect (1.16) | [47, 67, 43, 61, 47, 47] / [45, 60, 46, 59, 45, 49] |
+| P-mod7-global | 16: 19.5, 32: 38, 64: 47.5, 128: 47, 256: 41.5, 512: 31 | 16: 17, 32: 35.5, 64: 51, 128: 51, 256: 51, 512: 50.5 | False | False | no clear effect (0.92) | [48, 86, 46, 66, 43, 54] / [45, 44, 43, 49, 42, 43] |
+| P-ca-local | 1: 3, 2: 4, 4: 8, 8: 13, 16: 17.5, 32: 16, 64: 12.5, 128: 1, 256: 1 | 1: 3, 2: 4, 4: 8, 8: 12.5, 16: 17, 32: 19, 64: 16, 128: 2, 256: 1 | False | False | hurts (0.50) | [32, 33, 30, 29, 29, 29] / [32, 33, 29, 29, 29, 29] |

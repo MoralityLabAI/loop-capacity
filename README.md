@@ -43,8 +43,15 @@ its weight bits W·b?
     covered.
   - Local attention did not lift the extrapolation plateau.
   - Passes buy computation, not storage.
+- **Phase 3** ([pre-registration](docs/preregistration_phase3.md),
+  [summary](results/phase3/summary.md)).
+  - A progressive, depth-stability loss makes float local-attention scans
+    stable out to 512 passes, reaching n\* ≈ 90–98 against a baseline of
+    56–62.
+  - It does not rescue ternary models or rule 110.
+  - No arm meets the pre-registered 2× extrapolation rule.
 
-See `docs/note.md` §3–4 and §6.
+See `docs/note.md` §3–4, §6 and §7.
 
 ## Layout
 
