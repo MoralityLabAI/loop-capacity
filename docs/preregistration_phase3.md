@@ -80,8 +80,6 @@ Each value is the median over bit-widths and seeds, at θ = 0.9.
 
 ## Amendments
 
-(none yet)
-
 ### Amendment 1 (2026-10-13, operational; no design change)
 
 The first `mod7` progressive run failed twice with CUDA out-of-memory errors.
