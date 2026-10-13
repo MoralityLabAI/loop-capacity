@@ -229,8 +229,16 @@ class ModelStack(nn.Module):
         return 0 if self.arch.n_blocks == 1 else t
 
     def train_loss(self, x: torch.Tensor, y: torch.Tensor, use_checkpoint: bool = True,
-                   final_weight: float = 0.5, size_mask: torch.Tensor | None = None) -> torch.Tensor:
+                   final_weight: float = 0.5, size_mask: torch.Tensor | None = None,
+                   prog_k: int = 0, prog_n: torch.Tensor | None = None,
+                   prog_alpha: float = 0.5) -> torch.Tensor:
         """Per-model loss [M]: w*CE(final) + (1-w)*mean CE over earlier depths.
+
+        Progressive loss (prog_k > 0, tied models only; after Bansal et al. 2022):
+        restart from the detached state after prog_n passes (a 1-element long
+        tensor, 0..T, so the graph stays static), run prog_k more passes with
+        gradients, and mix CE at the end of that segment in with weight
+        prog_alpha. Segments can end at depth T + prog_k, past the training depth.
 
         size_mask [M, sizes] (1 = problem size counts in the loss) implements
         the curriculum: sizes are positions, or heads for multi-label tasks."""
@@ -265,6 +273,7 @@ class ModelStack(nn.Module):
 
         h = torch.zeros_like(e)
         total = torch.zeros(m, device=x.device)
+        states = [h] if prog_k else None
         for t in range(T):
             blk = blocks[self.block_index(t)]
             if use_checkpoint and T > 1:
@@ -273,7 +282,15 @@ class ModelStack(nn.Module):
                 h, ce = step(h, *blk)
             if weights[t]:
                 total = total + weights[t] * ce
-        return total
+            if prog_k:
+                states.append(h.detach())
+        if not prog_k:
+            return total
+        assert arch.n_blocks == 1, "progressive loss is defined for tied models"
+        h = torch.stack(states).index_select(0, prog_n).squeeze(0)
+        for _ in range(prog_k):
+            h, ce = checkpoint(step, h, *blocks[0], use_reentrant=False) if use_checkpoint else step(h, *blocks[0])
+        return (1 - prog_alpha) * total + prog_alpha * ce
 
     @torch.no_grad()
     def correct_by_position(self, x: torch.Tensor, y: torch.Tensor, record: list[int]) -> dict[int, torch.Tensor]:

@@ -151,3 +151,20 @@ def test_training_logs_and_evaluates_inside_the_loop(tmp_path):
     assert events.count("train") >= 3 and events.count("eval") == 2
     r = json.loads(out.read_text())
     assert [h["step"] for h in r["models"][0]["history"]] == [3, 6]
+
+
+def test_progressive_loss_restarts_from_detached_state():
+    arch = tied_arch("mod7", 16, 4)
+    model = ModelStack(arch, [32, 1.58], [1, 2], CPU)
+    g = torch.Generator()
+    g.manual_seed(2)
+    x, y = sample("mod7", (2, 3), 10, g, CPU)
+    base = model.train_loss(x, y)
+    for n in (0, 2, 4):  # restart at depth n, segment ends at n + 3 (up to T + 3)
+        loss = model.train_loss(x, y, prog_k=3, prog_n=torch.tensor([n]), prog_alpha=0.5)
+        assert torch.isfinite(loss).all() and not torch.allclose(loss, base)
+        model.zero_grad()
+        loss.sum().backward()
+        assert all(p.grad is not None for p in model.parameters())
+    # alpha = 0 recovers the plain loss
+    assert torch.allclose(model.train_loss(x, y, prog_k=3, prog_n=torch.tensor([1]), prog_alpha=0.0), base)

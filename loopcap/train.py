@@ -198,11 +198,15 @@ def run(args) -> dict:
 
     def train_step():
         with torch.autocast(device.type, dtype=torch.bfloat16, enabled=args.amp, cache_enabled=False):
-            loss = model.train_loss(x_s, y_s, final_weight=args.final_weight, size_mask=size_mask)
+            loss = model.train_loss(x_s, y_s, final_weight=args.final_weight, size_mask=size_mask,
+                                    prog_k=args.prog_k, prog_n=prog_n, prog_alpha=args.prog_alpha)
         loss.sum().backward()
         gnorm = clip_per_model(params, m, args.clip)
         opt.step()
         return loss.detach(), gnorm
+
+    prog_n = torch.zeros(1, dtype=torch.long, device=device)
+    prog_rng = __import__("random").Random(zlib.crc32(f"prog|{args.task}|{args.seeds}".encode()))
 
     def set_lr(step):
         lr = lr_at(step, args.steps, args.lr, args.warmup)
@@ -231,6 +235,8 @@ def run(args) -> dict:
             warm_until = step + 3 if use_graph else 0
             log({"event": "quantize", "step": step, "elapsed": time.time() - t0})
         lr = set_lr(step)
+        if args.prog_k:
+            prog_n.fill_(prog_rng.randint(0, arch.passes))
         if step > 0:
             x, y = stream.next()
             x_s.copy_(x)
@@ -307,7 +313,7 @@ def run(args) -> dict:
         "train_seconds": train_seconds, "eval_count": args.eval_count, "seq": args.seq,
         "amp": args.amp, "graph": use_graph, "final_weight": args.final_weight,
         "quant_start": args.quant_start, "curriculum": args.curriculum, "scale": args.scale,
-        "window": args.window,
+        "window": args.window, "prog_k": args.prog_k, "prog_alpha": args.prog_alpha,
         "final_horizon": horizon,
         "record": record, "models": models,
         "device": torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
@@ -353,6 +359,8 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--vram-gb", type=float, default=0.0)
     p.add_argument("--seq", type=int, default=256)
     p.add_argument("--window", type=int, default=0, help="local attention window (0 = full causal)")
+    p.add_argument("--prog-k", type=int, default=0, help="progressive loss: passes run from a random detached state")
+    p.add_argument("--prog-alpha", type=float, default=0.5, help="weight of the progressive term")
     p.add_argument("--amp", action=argparse.BooleanOptionalAction, default=True,
                    help="bf16 autocast for matmuls/attention; residual stream stays fp32")
     p.add_argument("--graph", action=argparse.BooleanOptionalAction, default=True,
