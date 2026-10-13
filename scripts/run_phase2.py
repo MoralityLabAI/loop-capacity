@@ -88,7 +88,9 @@ def main():
         for attempt in (1, 2):
             print(f"[{time.strftime('%H:%M:%S')}] start {j['id']} (attempt {attempt})", flush=True)
             rc = 0
-            with open(local / f"p2_{j['id']}.err", "w", encoding="utf-8") as err:
+            with open(local / f"p2_{j['id']}.err", "a", encoding="utf-8") as err:
+                err.write(f"=== attempt {attempt} {time.strftime('%H:%M:%S')}\n")
+                err.flush()
                 for k, c in enumerate(j["cmds"]):
                     if k == 0 and j.get("skip_first_if") and Path(j["skip_first_if"]).exists():
                         continue

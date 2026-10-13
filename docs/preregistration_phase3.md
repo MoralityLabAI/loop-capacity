@@ -81,3 +81,18 @@ Each value is the median over bit-widths and seeds, at θ = 0.9.
 ## Amendments
 
 (none yet)
+
+### Amendment 1 (2026-10-13, operational; no design change)
+
+The first `mod7` progressive run failed twice with CUDA out-of-memory errors.
+The cause was the evaluation that runs during training: it ran on top of the
+progressive term's CUDA-graph memory pool (about 520 MB) and exceeded the
+1.4 GB per-job cap. The `mod7` global-attention run was stopped before it
+reached the same point.
+
+From now on, phase-3 jobs run with a 2.5 GB cap and evaluate in chunks of 64
+sequences instead of 256. This changes neither the model, the training, nor
+any measured quantity.
+
+The `ca110d64` run had already passed its in-training evaluations at the old
+settings, so it continues unchanged.

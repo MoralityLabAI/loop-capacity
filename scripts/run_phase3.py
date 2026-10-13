@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "phase3"
 COMMON = ["--arm", "tied", "--d", "64", "--T", "32", "--bits", "32", "4", "1.58", "--seeds", "1", "2",
           "--lr", "0.003", "--quant-start", "0.5", "--steps", "6000", "--batch", "32",
-          "--prog-k", "8", "--prog-alpha", "0.5"]
+          "--prog-k", "8", "--prog-alpha", "0.5", "--eval-chunk", "64"]
 
 
 def jobs(py: str, ckpt_root: Path) -> list[dict]:
@@ -47,7 +47,7 @@ def jobs(py: str, ckpt_root: Path) -> list[dict]:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt-root", default=os.environ.get("LOOPCAP_CKPT", str(ROOT / "checkpoints")))
-    ap.add_argument("--vram-gb", type=float, default=1.4)
+    ap.add_argument("--vram-gb", type=float, default=2.5)
     ap.add_argument("--dry", action="store_true")
     args = ap.parse_args()
     local = ROOT / "runs_local"
@@ -65,7 +65,9 @@ def main():
         for attempt in (1, 2):
             print(f"[{time.strftime('%H:%M:%S')}] start {j['id']} (attempt {attempt})", flush=True)
             rc = 0
-            with open(local / f"p3_{j['id']}.err", "w", encoding="utf-8") as err:
+            with open(local / f"p3_{j['id']}.err", "a", encoding="utf-8") as err:
+                err.write(f"=== attempt {attempt} {time.strftime('%H:%M:%S')}\n")
+                err.flush()
                 for k, c in enumerate(j["cmds"]):
                     if k == 0 and Path(j["res"]).exists():
                         continue  # training already done; only the evaluation is left
