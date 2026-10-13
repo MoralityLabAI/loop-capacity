@@ -990,7 +990,8 @@ What this adds to §6.1:
 - **Weight bits are again not what binds.** The float models with n\* = 98
   have the same W as the ternary ones with 23. The difference comes from
   training through quantization, not from the counting bound: the ternary
-  bound is 79 kbit, against about 130 bits needed (§6.2).
+  bound is 79 kbit, while the mod-7 rule itself takes 147 bits to write
+  down (§3.6).
 
 The natural next step would train at larger depth, or with a contraction
 term that makes "solved" positions a fixed point of the block. Neither was
